@@ -507,3 +507,284 @@ class NamedCountRow extends StatelessWidget {
         ),
       );
 }
+
+/// A segmented tab bar that looks like the rest of the app.
+///
+/// The Material default is an underline on a bare strip, which on these
+/// screens read as part of the page rather than as a control. This is the
+/// same rounded, tinted shape the filters and the month button use, and it
+/// takes an explicit controller so no screen depends on an inherited one.
+class PillTabBar extends StatelessWidget implements PreferredSizeWidget {
+  const PillTabBar({
+    super.key,
+    required this.controller,
+    required this.labels,
+    this.icons,
+  });
+
+  final TabController controller;
+  final List<String> labels;
+  final List<List<List<dynamic>>>? icons;
+
+  @override
+  Size get preferredSize => const Size.fromHeight(56);
+
+  @override
+  Widget build(BuildContext context) => AnimatedBuilder(
+        animation: controller,
+        builder: (context, _) => Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+          child: Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border.all(color: kBorderColor),
+              borderRadius: borderRadius15,
+            ),
+            child: Row(
+              children: [
+                for (var i = 0; i < labels.length; i++)
+                  Expanded(
+                    child: _Segment(
+                      label: labels[i],
+                      icon: icons == null ? null : icons![i],
+                      selected: controller.index == i,
+                      onTap: () => controller.animateTo(i),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      );
+}
+
+class _Segment extends StatelessWidget {
+  const _Segment({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+    this.icon,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  final List<List<dynamic>>? icon;
+
+  @override
+  Widget build(BuildContext context) => Material(
+        color: selected ? kPrimaryColor : Colors.transparent,
+        borderRadius: borderRadius10,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: borderRadius10,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 4),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (icon != null) ...[
+                  AppIcon(icon!,
+                      size: 15,
+                      color: selected ? Colors.white : kMutedColor),
+                  const SizedBox(width: 6),
+                ],
+                Flexible(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontFamily: gilroySemiBold,
+                      fontSize: 13,
+                      color: selected ? Colors.white : kMutedColor,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+}
+
+/// The stages of an order, drawn as a line rather than as a list of dates.
+class Timeline extends StatelessWidget {
+  const Timeline({super.key, required this.entries});
+
+  final List<TimelineEntry> entries;
+
+  @override
+  Widget build(BuildContext context) => Column(
+        children: [
+          for (var i = 0; i < entries.length; i++)
+            IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  SizedBox(
+                    width: 26,
+                    child: Column(
+                      children: [
+                        Container(
+                          width: 11,
+                          height: 11,
+                          margin: const EdgeInsets.only(top: 4),
+                          decoration: BoxDecoration(
+                            color: entries[i].done ? kPrimaryColor : kBorderColor,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        if (i != entries.length - 1)
+                          Expanded(
+                            child: Container(
+                              width: 2,
+                              color: kBorderColor,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 14),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            entries[i].title,
+                            style: TextStyle(
+                              fontFamily: gilroySemiBold,
+                              fontSize: 13.5,
+                              color: entries[i].done ? kBlackColor : kMutedColor,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            entries[i].subtitle,
+                            style: const TextStyle(
+                              fontFamily: gilroyRegular,
+                              fontSize: 12,
+                              color: kMutedColor,
+                            ),
+                          ),
+                          if (entries[i].note != null) ...[
+                            const SizedBox(height: 3),
+                            Text(
+                              entries[i].note!,
+                              style: const TextStyle(
+                                fontFamily: gilroyMedium,
+                                fontSize: 12,
+                                color: kBlackColor,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      );
+}
+
+class TimelineEntry {
+  const TimelineEntry({
+    required this.title,
+    required this.subtitle,
+    required this.done,
+    this.note,
+  });
+
+  final String title;
+  final String subtitle;
+
+  /// A stage that has actually happened, as opposed to one still waiting.
+  final bool done;
+  final String? note;
+}
+
+/// One supporting line under a [HeadlineCard]'s headline figure.
+class HeadlineRow {
+  const HeadlineRow(this.label, this.value, {this.color});
+
+  final String label;
+  final String value;
+  final Color? color;
+}
+
+/// One headline figure with its supporting rows.
+///
+/// This replaced a grid of equal tiles: half a dozen numbers of the same size
+/// say nothing about which one to read first.
+class HeadlineCard extends StatelessWidget {
+  const HeadlineCard({
+    super.key,
+    required this.icon,
+    required this.accent,
+    required this.caption,
+    required this.value,
+    this.rows = const [],
+  });
+
+  final List<List<dynamic>> icon;
+  final Color accent;
+  final String caption;
+  final String value;
+  final List<HeadlineRow> rows;
+
+  @override
+  Widget build(BuildContext context) => CardBox(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                AppIconBadge(icon, color: accent, size: 42),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        caption,
+                        style: const TextStyle(
+                          fontFamily: gilroyMedium,
+                          fontSize: 12.5,
+                          color: kMutedColor,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          value,
+                          style: TextStyle(
+                            fontFamily: gilroyBold,
+                            fontSize: 24,
+                            color: accent,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            if (rows.isNotEmpty) const Divider(height: 20, color: kBorderColor),
+            for (final row in rows)
+              InfoRow(
+                label: row.label,
+                value: row.value,
+                valueColor: row.color ?? kBlackColor,
+              ),
+          ],
+        ),
+      );
+}

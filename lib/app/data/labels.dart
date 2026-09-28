@@ -37,12 +37,25 @@ class Labels {
             _t('Действие с заказом отклонено', 'Sargyt hereketi ret edildi'),
         'app.request.rejected': _t(
           'Запрос из приложения отклонён',
-          'Programmadan gelen soraw ret edildi',
+          'Programmadan gelen sorag ret edildi',
         ),
         'users.request.rejected': _t(
           'Запрос по сотрудникам отклонён',
-          'Işgärler boýunça soraw ret edildi',
+          'Işgärler boýunça sorag ret edildi',
         ),
+        'receipt.delivery_result': _t(
+          'Результат отправки чека',
+          'Çekiň iberiliş netijesi',
+        ),
+        'receipt.reprint_requested': _t(
+          'Запрошена повторная печать чека',
+          'Çekiň gaýtadan çap edilmegi soraldy',
+        ),
+        'receipt.printed': _t('Чек напечатан', 'Çek çap edildi'),
+        'receipt.print_failed': _t('Чек не напечатан', 'Çek çap edilmedi'),
+        'receipt.queued': _t('Чек поставлен в очередь', 'Çek nobata goýuldy'),
+        'receipt.created': _t('Чек создан', 'Çek döredildi'),
+        'receipt.cancelled': _t('Чек отменён', 'Çek ýatyryldy'),
         'cash_handoff.submitted':
             _t('Деньги смены переданы', 'Çalşygyň puly tabşyryldy'),
         'cash_handoff.confirmed':
@@ -64,7 +77,7 @@ class Labels {
     final known = auditActions[action];
     if (known != null) return known;
     if (action != null && action.endsWith('.request.rejected')) {
-      return _t('Запрос отклонён', 'Soraw ret edildi');
+      return _t('Запрос отклонён', 'Sorag ret edildi');
     }
     return _t('Изменение записи', 'Ýazgynyň üýtgemegi');
   }
@@ -87,6 +100,19 @@ class Labels {
         'SETTINGS': _t('Настройки', 'Sazlamalar'),
         'STOCK': _t('Склад', 'Ammar'),
         'TARIFF': _t('Тариф', 'Nyrh'),
+        'RECEIPT': _t('Чек', 'Çek'),
+        'SETTLEMENT': _t('Денежная запись', 'Pul ýazgysy'),
+        'CUSTOMER': _t('Клиент', 'Müşderi'),
+        'COURIER': _t('Курьер', 'Kurýer'),
+        'VARIANT': _t('Вариант блюда', 'Tagamyň görnüşi'),
+        'ETRAP': _t('Район', 'Etrap'),
+        'DISTRICT': _t('Район', 'Etrap'),
+        'ROLE': _t('Роль', 'Wezipe'),
+        'PERMISSION': _t('Право доступа', 'Rugsat'),
+        'DEVICE': _t('Устройство', 'Enjam'),
+        'PRINTER': _t('Принтер', 'Printer'),
+        'NOTIFICATION': _t('Уведомление', 'Habarnama'),
+        'LOYALTY': _t('Баллы', 'Ballar'),
       };
 
   static String entity(String? type) =>
@@ -124,6 +150,24 @@ class Labels {
         'isActive': _t('Активно', 'Işjeň'),
         'declaredAmount': _t('Заявленная сумма', 'Yglan edilen möçber'),
         'expectedAmount': _t('Ожидаемая сумма', 'Garaşylýan möçber'),
+        'quantity': _t('Количество', 'Mukdary'),
+        'productName': _t('Блюдо', 'Tagam'),
+        'variantName': _t('Вариант', 'Görnüşi'),
+        'unitPrice': _t('Цена за штуку', 'Birligiň bahasy'),
+        'lineTotal': _t('Сумма строки', 'Setiriň jemi'),
+        'reason': _t('Причина', 'Sebäbi'),
+        'comment': _t('Комментарий', 'Bellik'),
+        'phone': _t('Телефон', 'Telefon'),
+        'role': _t('Роль', 'Wezipe'),
+        'startsAt': _t('Начало', 'Başlanýar'),
+        'endsAt': _t('Конец', 'Gutarýar'),
+        'createdAt': _t('Создано', 'Döredildi'),
+        'updatedAt': _t('Изменено', 'Üýtgedildi'),
+        'printedAt': _t('Напечатано', 'Çap edildi'),
+        'receiptId': _t('Чек', 'Çek'),
+        'printerName': _t('Принтер', 'Printer'),
+        'success': _t('Успешно', 'Üstünlikli'),
+        'error': _t('Ошибка', 'Ýalňyşlyk'),
       };
 
   static String field(String key) => fields[key] ?? key;
@@ -140,6 +184,15 @@ class Labels {
         'CASH_RETURNED': _t('Деньги возвращены', 'Pul gaýtaryldy'),
         'RECONCILED': _t('Сверен', 'Deňeşdirilen'),
         'CANCELLED': _t('Отменён', 'Ýatyryldy'),
+        'DRAFT': _t('Черновик', 'Çyzgy'),
+        'CONFIRMED': _t('Подтверждён', 'Tassyklandy'),
+        'PREPARING': _t('Готовится', 'Taýýarlanýar'),
+        'ON_THE_WAY': _t('В доставке', 'Ýolda'),
+        'COMPLETED': _t('Завершён', 'Tamamlandy'),
+        'RETURNED': _t('Возвращён', 'Yzyna gaýtaryldy'),
+        'REJECTED': _t('Отклонён', 'Ret edildi'),
+        'WAITING_PAYMENT': _t('Ожидает оплаты', 'Töleg garaşýar'),
+        'PAID': _t('Оплачен', 'Tölendi'),
       };
 
   static String orderStatus(String? status) =>
@@ -160,6 +213,8 @@ class Labels {
         'CONFIRMED': _t('Подтверждён', 'Tassyklandy'),
         'PENDING': _t('Не передан', 'Tabşyrylmadyk'),
         'REJECTED': _t('Отклонён', 'Ret edildi'),
+        'DRAFT': _t('Черновик', 'Çyzgy'),
+        'CANCELLED': _t('Отменён', 'Ýatyryldy'),
       };
 
   static String handoffStatus(String? status) =>
@@ -210,6 +265,14 @@ class Labels {
         'order.courier-reassigned' =>
           AppIcons.courier,
         'order.transitioned' => AppIcons.transition,
+        'receipt.printed' ||
+        'receipt.created' ||
+        'receipt.queued' ||
+        'receipt.delivery_result' ||
+        'receipt.reprint_requested' ||
+        'receipt.print_failed' ||
+        'receipt.cancelled' =>
+          AppIcons.note,
         'cash_handoff.submitted' => AppIcons.submitted,
         'cash_handoff.confirmed' => AppIcons.confirmed,
         'order.historical-cash-reconciled' ||

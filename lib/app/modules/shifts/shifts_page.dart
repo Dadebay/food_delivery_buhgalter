@@ -21,8 +21,17 @@ import 'shift_detail_page.dart';
 /// `/shifts` takes calendar dates only — a shift key is not accepted here —
 /// and a whole day's report is never labelled as one shift's takings: each
 /// amount below comes from that shift's own entry.
-class ShiftsPage extends StatelessWidget {
+class ShiftsPage extends StatefulWidget {
   const ShiftsPage({super.key});
+
+  @override
+  State<ShiftsPage> createState() => _ShiftsPageState();
+}
+
+class _ShiftsPageState extends State<ShiftsPage> {
+  /// The newest day is what an accountant opens this for; the rest of the
+  /// month is a month's worth of scrolling behind one tap.
+  bool _allDays = false;
 
   @override
   Widget build(BuildContext context) {
@@ -57,47 +66,96 @@ class ShiftsPage extends StatelessWidget {
             child: ListView(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
               physics: const AlwaysScrollableScrollPhysics(),
-              children: [
-                if (data.shifts.isEmpty)
-                  CardBox(
-                    child: Text(
-                      S.noShifts,
-                      style: const TextStyle(
-                        fontFamily: gilroyRegular,
-                        fontSize: 13.5,
-                        color: kMutedColor,
-                      ),
-                    ),
-                  )
-                else
-                  for (final entry in data.grouped.entries) ...[
-                    Padding(
-                      padding: const EdgeInsets.only(top: 6, bottom: 8),
-                      child: Text(
-                        _dayTitle(entry.key),
-                        style: const TextStyle(
-                          fontFamily: gilroyBold,
-                          fontSize: 15,
-                          color: kBlackColor,
-                        ),
-                      ),
-                    ),
-                    for (final shift in entry.value)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 10),
-                        child: ShiftCard(
-                          shift: shift,
-                          settings: data.settings,
-                          onChanged: reload,
-                        ),
-                      ),
-                  ],
-              ],
+              children: _days(data, reload),
             ),
           ),
         ),
       ),
     );
+  }
+
+  /// The first day group, plus the rest once asked for.
+  List<Widget> _days(_ShiftsData data, VoidCallback reload) {
+    if (data.shifts.isEmpty) {
+      return [
+        CardBox(
+          child: Text(
+            S.noShifts,
+            style: const TextStyle(
+              fontFamily: gilroyRegular,
+              fontSize: 13.5,
+              color: kMutedColor,
+            ),
+          ),
+        ),
+      ];
+    }
+    final grouped = data.grouped;
+    final days = grouped.keys.toList();
+    final shown = _allDays ? days : days.take(1).toList();
+    final hidden = days.length - shown.length;
+
+    return [
+      for (final day in shown) ...[
+        Padding(
+          padding: const EdgeInsets.only(top: 6, bottom: 8),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  _dayTitle(day),
+                  style: const TextStyle(
+                    fontFamily: gilroyBold,
+                    fontSize: 15,
+                    color: kBlackColor,
+                  ),
+                ),
+              ),
+              // Only claim "today" when the newest day really is today —
+              // a past month opens on its last day, not on this one.
+              if (!_allDays && day == Ashgabat.date(Ashgabat.now()))
+                Pill(S.onlyToday, color: kMutedColor),
+            ],
+          ),
+        ),
+        for (final shift in grouped[day]!)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: ShiftCard(
+              shift: shift,
+              settings: data.settings,
+              onChanged: reload,
+            ),
+          ),
+      ],
+      if (hidden > 0 || _allDays) ...[
+        const SizedBox(height: 4),
+        SizedBox(
+          width: double.infinity,
+          height: 46,
+          child: OutlinedButton.icon(
+            style: OutlinedButton.styleFrom(
+              side: const BorderSide(color: kBorderColor),
+              backgroundColor: Colors.white,
+              shape:
+                  const RoundedRectangleBorder(borderRadius: borderRadius15),
+            ),
+            onPressed: () => setState(() => _allDays = !_allDays),
+            icon: AppIcon(
+              _allDays ? AppIcons.collapse : AppIcons.expand,
+              size: 17,
+            ),
+            label: Text(
+              _allDays ? S.hideOtherDays : S.showOtherDays(hidden),
+              style: const TextStyle(
+                fontFamily: gilroySemiBold,
+                color: kPrimaryColor,
+              ),
+            ),
+          ),
+        ),
+      ],
+    ];
   }
 
   static String _dayTitle(String dayKey) {

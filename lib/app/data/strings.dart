@@ -41,7 +41,7 @@ class S {
   static String get errNoAccess => _t('Нет доступа', 'Rugsat ýok');
   static String get errLoad =>
       _t('Не удалось загрузить', 'Ýüklemek başartmady');
-  static String get errBadRequest => _t('Неверный запрос', 'Nädogry soraw');
+  static String get errBadRequest => _t('Неверный запрос', 'Nädogry sorag');
   static String get errSession => _t('Сессия истекла', 'Sessiýa gutardy');
   static String get errNotFound => _t('Запись не найдена', 'Ýazgy tapylmady');
   static String get errConflict =>
@@ -60,7 +60,7 @@ class S {
       _t('Попробуйте ещё раз.', 'Ýene bir gezek synanyşyň.');
   static String get msgBadRequest => _t(
         'Сервер не принял параметры запроса.',
-        'Serwer sorawyň parametrlerini kabul etmedi.',
+        'Serwer soragyň parametrlerini kabul etmedi.',
       );
   static String get msgSession => _t(
         'Войдите заново, чтобы продолжить.',
@@ -80,7 +80,7 @@ class S {
       );
   static String get msgNetwork => _t(
         'Проверьте связь и повторите запрос.',
-        'Baglanyşygy barlaň we sorawy gaýtalaň.',
+        'Baglanyşygy barlaň we soragy gaýtalaň.',
       );
   static String get msgServer => _t(
         'Сервер не смог ответить. Повторите позже.',
@@ -457,6 +457,14 @@ class S {
   static String get filter => _t('Фильтр', 'Süzgüç');
   static String get chooseSection => _t('Раздел', 'Bölüm');
   static String get chooseAction => _t('Действие', 'Hereket');
+  static String get tabMoney => _t('Деньги', 'Pul');
+  static String get tabOrders => _t('Заказы', 'Sargytlar');
+  static String get tabBreakdown => _t('Разбивка', 'Bölünişi');
+  static String showOtherDays(int count) =>
+      _t('Показать остальные дни ($count)', 'Galan günleri görkez ($count)');
+  static String get hideOtherDays =>
+      _t('Скрыть остальные дни', 'Galan günleri gizle');
+  static String get onlyToday => _t('Только сегодня', 'Diňe şu gün');
   static String get whatChanged => _t('Что изменилось', 'Näme üýtgedi');
   static String changedFields(String list) =>
       _t('Изменено: $list', 'Üýtgedi: $list');

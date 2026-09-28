@@ -13,20 +13,32 @@ import '../../widgets/daily_charts.dart';
 import '../../widgets/expandable_list.dart';
 import '../../widgets/language_action.dart';
 import '../../widgets/month_picker.dart';
+import '../../widgets/state_views.dart';
 import '../../widgets/ui.dart';
 import '../orders/orders_page.dart';
 
 /// The month, built from the three range calls the spec prescribes.
 ///
 /// There is no `/monthly` endpoint: `overview`, `report` and `shifts` are
-/// asked in parallel, and the rest of the sections load when they are opened
-/// rather than being downloaded here to build charts.
-///
-/// The page reads top to bottom as one answer: what came in, what was
-/// ordered, how both moved day by day, and only then the breakdowns — each
-/// of which shows its head and keeps its tail one tap away.
-class MonthPage extends StatelessWidget {
+/// asked in parallel, once, and the three tabs read that one answer. Money,
+/// orders and the breakdowns are separate questions, and stacking them into
+/// a single scroll made the page long enough that the charts were never seen.
+class MonthPage extends StatefulWidget {
   const MonthPage({super.key});
+
+  @override
+  State<MonthPage> createState() => _MonthPageState();
+}
+
+class _MonthPageState extends State<MonthPage>
+    with SingleTickerProviderStateMixin {
+  late final TabController _tabs = TabController(length: 3, vsync: this);
+
+  @override
+  void dispose() {
+    _tabs.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,49 +49,49 @@ class MonthPage extends StatelessWidget {
         title: S.charts,
         subtitle: Ashgabat.monthLabel(period.month),
         actions: const [MonthAction(), LanguageAction(), SizedBox(width: 4)],
+        bottom: PillTabBar(
+          controller: _tabs,
+          // Three short labels fit a 320 px screen without scrolling.
+          labels: [S.tabMoney, S.tabOrders, S.tabBreakdown],
+        ),
         child: AsyncLoader<MonthBundle>(
           requestKey: '${period.fromDate}:${period.toDate}',
           request: () => App.instance.accounting
               .month(fromDate: period.fromDate, toDate: period.toDate),
-          builder: (context, bundle, reload) => RefreshIndicator(
-            color: kPrimaryColor,
-            onRefresh: () async => reload(),
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
-              physics: const AlwaysScrollableScrollPhysics(),
-              children: _body(context, bundle, period.month),
-            ),
+          builder: (context, bundle, reload) => TabBarView(
+            controller: _tabs,
+            children: [
+              _Tab(onRefresh: reload, children: _money(context, bundle, period)),
+              _Tab(onRefresh: reload, children: _orders(context, bundle, period)),
+              _Tab(onRefresh: reload, children: _breakdown(bundle)),
+            ],
           ),
         ),
       ),
     );
   }
 
-  List<Widget> _body(
-    BuildContext context,
-    MonthBundle bundle,
-    DateTime month,
-  ) {
-    final overview = bundle.overview.summary;
+  // ── Money ───────────────────────────────────────────────────────────────
+  List<Widget> _money(
+      BuildContext context, MonthBundle bundle, PeriodStore period) {
     final report = bundle.report.summary;
     final discrepancy = report.handoffDiscrepancy;
-
     return [
-      // ── Money, as one block with one headline ──────────────────────────
-      _HeadlineCard(
+      HeadlineCard(
         icon: AppIcons.collected,
         accent: kPositiveColor,
         caption: S.received,
         value: Fmt.money(report.collectedAmount),
         rows: [
-          _Row(S.handedOver, Fmt.money(report.submittedAmount)),
-          _Row(S.confirmedMoney, Fmt.money(report.confirmedAmount),
+          HeadlineRow(S.handedOver, Fmt.money(report.submittedAmount)),
+          HeadlineRow(S.confirmedMoney, Fmt.money(report.confirmedAmount),
               color: kPositiveColor),
-          _Row(S.outstanding, Fmt.money(report.outstandingAmount),
+          HeadlineRow(S.outstanding, Fmt.money(report.outstandingAmount),
               color: kWarningColor),
-          _Row(S.declaredByPackets, Fmt.money(report.declaredHandoffAmount)),
+          HeadlineRow(
+              S.declaredByPackets, Fmt.money(report.declaredHandoffAmount)),
           if (discrepancy != null && discrepancy != 0)
-            _Row(
+            HeadlineRow(
               S.discrepancy,
               Fmt.signedMoney(discrepancy),
               color: discrepancy < 0 ? kNegativeColor : kWarningColor,
@@ -90,54 +102,64 @@ class MonthPage extends StatelessWidget {
         const SizedBox(height: 10),
         NoticeBox(S.discrepancyNote, color: kPrimaryColor),
       ],
+      const SizedBox(height: 14),
+      DailyMoneyChart(
+        points: alignMoney(period.month, bundle.report.daily),
+        onDayTap: (day) => _openDay(context, day, OrderBasis.cashReturned),
+      ),
+    ];
+  }
 
-      // ── Orders, the same shape so the two read as a pair ───────────────
-      const SizedBox(height: 12),
-      _HeadlineCard(
+  // ── Orders ──────────────────────────────────────────────────────────────
+  List<Widget> _orders(
+      BuildContext context, MonthBundle bundle, PeriodStore period) {
+    final overview = bundle.overview.summary;
+    return [
+      HeadlineCard(
         icon: AppIcons.orders,
         accent: kPrimaryColor,
         caption: S.createdOrders,
         value: Fmt.count(overview.createdOrders),
         rows: [
-          _Row(S.cancelledNow, Fmt.count(overview.cancelledOrders),
+          HeadlineRow(S.cancelledNow, Fmt.count(overview.cancelledOrders),
               color: kNegativeColor),
-          _Row(S.cancelShare, Fmt.percent(overview.cancellationRate)),
-          _Row(S.cancelEvents, Fmt.count(overview.cancellationEvents)),
-          _Row(S.editEvents, Fmt.count(overview.editEvents)),
-          _Row(S.foodAmount, Fmt.money(overview.foodAmount)),
+          HeadlineRow(S.cancelShare, Fmt.percent(overview.cancellationRate)),
+          HeadlineRow(S.cancelEvents, Fmt.count(overview.cancellationEvents)),
+          HeadlineRow(S.editEvents, Fmt.count(overview.editEvents)),
+          HeadlineRow(S.foodAmount, Fmt.money(overview.foodAmount)),
         ],
       ),
-
-      const SizedBox(height: 18),
+      const SizedBox(height: 14),
       DailyOrdersChart(
-        points: alignOrders(month, bundle.overview.daily),
+        points: alignOrders(period.month, bundle.overview.daily),
         onDayTap: (day) => _openDay(context, day, OrderBasis.created),
       ),
-      const SizedBox(height: 12),
-      DailyMoneyChart(
-        points: alignMoney(month, bundle.report.daily),
-        onDayTap: (day) => _openDay(context, day, OrderBasis.cashReturned),
-      ),
+    ];
+  }
 
-      if (bundle.overview.districts.isNotEmpty) ...[
+  // ── Breakdowns ──────────────────────────────────────────────────────────
+  List<Widget> _breakdown(MonthBundle bundle) {
+    final overview = bundle.overview;
+    final blocks = <Widget>[
+      if (overview.districts.isNotEmpty) ...[
         SectionTitle(S.districts, icon: AppIcons.address),
-        _CountList(rows: bundle.overview.districts),
+        _CountList(rows: overview.districts),
       ],
-      if (bundle.overview.branches.isNotEmpty) ...[
+      if (overview.branches.isNotEmpty) ...[
         SectionTitle(S.kitchens, icon: AppIcons.branch),
-        _CountList(rows: bundle.overview.branches),
+        _CountList(rows: overview.branches),
       ],
-      if (bundle.overview.cancellationReasons.isNotEmpty) ...[
+      if (overview.cancellationReasons.isNotEmpty) ...[
         SectionTitle(S.cancelReasons, icon: AppIcons.cancelled),
-        _CountList(rows: bundle.overview.cancellationReasons),
+        _CountList(rows: overview.cancellationReasons),
       ],
-      if (bundle.overview.mostOrderedProducts.isNotEmpty) ...[
+      if (overview.mostOrderedProducts.isNotEmpty) ...[
         SectionTitle(S.mostOrdered, icon: AppIcons.ranking),
-        _ProductList(rows: bundle.overview.mostOrderedProducts),
+        _ProductList(rows: overview.mostOrderedProducts),
       ],
-      if (bundle.overview.leastOrderedProducts.isNotEmpty) ...[
+      if (overview.leastOrderedProducts.isNotEmpty) ...[
         SectionTitle(S.leastOrdered, icon: AppIcons.ranking),
-        _ProductList(rows: bundle.overview.leastOrderedProducts),
+        _ProductList(rows: overview.leastOrderedProducts),
         const SizedBox(height: 8),
         Text(
           S.demandNote,
@@ -149,6 +171,8 @@ class MonthPage extends StatelessWidget {
         ),
       ],
     ];
+    // An empty answer is a state of its own, not a failure and not a blank.
+    return blocks.isEmpty ? [const EmptyView()] : blocks;
   }
 
   /// A tap on a day opens that day's orders on the basis of the chart that
@@ -171,81 +195,20 @@ class MonthPage extends StatelessWidget {
   }
 }
 
-class _Row {
-  const _Row(this.label, this.value, {this.color});
+class _Tab extends StatelessWidget {
+  const _Tab({required this.children, required this.onRefresh});
 
-  final String label;
-  final String value;
-  final Color? color;
-}
-
-/// One headline figure with its supporting rows.
-///
-/// This replaced a grid of six equal tiles: six numbers of the same size say
-/// nothing about which one to read first.
-class _HeadlineCard extends StatelessWidget {
-  const _HeadlineCard({
-    required this.icon,
-    required this.accent,
-    required this.caption,
-    required this.value,
-    required this.rows,
-  });
-
-  final List<List<dynamic>> icon;
-  final Color accent;
-  final String caption;
-  final String value;
-  final List<_Row> rows;
+  final List<Widget> children;
+  final VoidCallback onRefresh;
 
   @override
-  Widget build(BuildContext context) => CardBox(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                AppIconBadge(icon, color: accent, size: 42),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        caption,
-                        style: const TextStyle(
-                          fontFamily: gilroyMedium,
-                          fontSize: 12.5,
-                          color: kMutedColor,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      FittedBox(
-                        fit: BoxFit.scaleDown,
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          value,
-                          style: TextStyle(
-                            fontFamily: gilroyBold,
-                            fontSize: 24,
-                            color: accent,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            if (rows.isNotEmpty) const Divider(height: 20, color: kBorderColor),
-            for (final row in rows)
-              InfoRow(
-                label: row.label,
-                value: row.value,
-                valueColor: row.color ?? kBlackColor,
-              ),
-          ],
+  Widget build(BuildContext context) => RefreshIndicator(
+        color: kPrimaryColor,
+        onRefresh: () async => onRefresh(),
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 28),
+          physics: const AlwaysScrollableScrollPhysics(),
+          children: children,
         ),
       );
 }
