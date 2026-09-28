@@ -1,0 +1,52 @@
+name: accounting_app
+version: 1.0.0+1
+publish_to: none
+description: Bухгалтерия — смены, месяц и контроль действий (read-only oversight client).
+environment:
+  sdk: ">=3.3.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.6
+  # Same stack as the SMS gateway app this was branched from: GetX for
+  # routing/state, get_storage for the session, plain http for the API.
+  get: 4.6.6
+  get_storage: any
+  http: ^1.2.2
+  hugeicons: ^1.1.7
+  iconly: any
+  lottie:
+  # Charts are a first-class section of this app ("Графики"), and the daily
+  # series come straight from the API.
+  fl_chart: ^0.69.0
+  # Ashgabat is UTC+5 and every boundary in the spec is calendar-based, so
+  # date maths and formatting are worth a real library.
+  intl: ^0.19.0
+
+dev_dependencies:
+  flutter_lints: ^3.0.0
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  assets:
+    - assets/fonts/
+    - assets/icons/
+    - assets/lottie/
+    - assets/image/
+
+  fonts:
+    - family: GilroyBold
+      fonts:
+        - asset: assets/fonts/Gilroy-Bold.ttf
+    - family: GilroySemiBold
+      fonts:
+        - asset: assets/fonts/Gilroy-SemiBold.ttf
+    - family: GilroyMedium
+      fonts:
+        - asset: assets/fonts/Gilroy-Medium.ttf
+    - family: GilroyRegular
+      fonts:
+        - asset: assets/fonts/Gilroy-Regular.ttf
+  uses-material-design: true
