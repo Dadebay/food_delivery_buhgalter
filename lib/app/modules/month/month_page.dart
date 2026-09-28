@@ -8,10 +8,11 @@ import '../../data/ashgabat_time.dart';
 import '../../data/formatting.dart';
 import '../../data/models/overview.dart';
 import '../../data/strings.dart';
-import '../../widgets/language_action.dart';
-import '../../widgets/month_picker.dart';
 import '../../widgets/async_loader.dart';
 import '../../widgets/daily_charts.dart';
+import '../../widgets/expandable_list.dart';
+import '../../widgets/language_action.dart';
+import '../../widgets/month_picker.dart';
 import '../../widgets/ui.dart';
 import '../orders/orders_page.dart';
 
@@ -20,6 +21,10 @@ import '../orders/orders_page.dart';
 /// There is no `/monthly` endpoint: `overview`, `report` and `shifts` are
 /// asked in parallel, and the rest of the sections load when they are opened
 /// rather than being downloaded here to build charts.
+///
+/// The page reads top to bottom as one answer: what came in, what was
+/// ordered, how both moved day by day, and only then the breakdowns — each
+/// of which shows its head and keeps its tail one tap away.
 class MonthPage extends StatelessWidget {
   const MonthPage({super.key});
 
@@ -40,7 +45,7 @@ class MonthPage extends StatelessWidget {
             color: kPrimaryColor,
             onRefresh: () async => reload(),
             child: ListView(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
               physics: const AlwaysScrollableScrollPhysics(),
               children: _body(context, bundle, period.month),
             ),
@@ -58,95 +63,52 @@ class MonthPage extends StatelessWidget {
     final overview = bundle.overview.summary;
     final report = bundle.report.summary;
     final discrepancy = report.handoffDiscrepancy;
+
     return [
-      SectionTitle(S.ordersAndCancels, icon: AppIcons.orders),
-      StatGrid(tiles: [
-        StatTile(
-          label: S.createdOrders,
-          value: Fmt.count(overview.createdOrders),
-          icon: AppIcons.orders,
-          color: kPrimaryColor,
-        ),
-        StatTile(
-          label: S.cancelledNow,
-          value: Fmt.count(overview.cancelledOrders),
-          icon: AppIcons.cancelled,
-          color: kNegativeColor,
-          hint: S.cancelledNowHint,
-        ),
-        StatTile(
-          label: S.cancelShare,
-          value: Fmt.percent(overview.cancellationRate),
-          icon: AppIcons.districts,
-        ),
-        StatTile(
-          label: S.cancelEvents,
-          value: Fmt.count(overview.cancellationEvents),
-          icon: AppIcons.cancelled,
-          hint: S.cancelEventsHint,
-        ),
-        StatTile(
-          label: S.editEvents,
-          value: Fmt.count(overview.editEvents),
-          icon: AppIcons.edited,
-          hint: S.editEventsHint,
-        ),
-        StatTile(
-          label: S.foodAmount,
-          value: Fmt.money(overview.foodAmount),
-          icon: AppIcons.dish,
-        ),
-      ]),
+      // ── Money, as one block with one headline ──────────────────────────
+      _HeadlineCard(
+        icon: AppIcons.collected,
+        accent: kPositiveColor,
+        caption: S.received,
+        value: Fmt.money(report.collectedAmount),
+        rows: [
+          _Row(S.handedOver, Fmt.money(report.submittedAmount)),
+          _Row(S.confirmedMoney, Fmt.money(report.confirmedAmount),
+              color: kPositiveColor),
+          _Row(S.outstanding, Fmt.money(report.outstandingAmount),
+              color: kWarningColor),
+          _Row(S.declaredByPackets, Fmt.money(report.declaredHandoffAmount)),
+          if (discrepancy != null && discrepancy != 0)
+            _Row(
+              S.discrepancy,
+              Fmt.signedMoney(discrepancy),
+              color: discrepancy < 0 ? kNegativeColor : kWarningColor,
+            ),
+        ],
+      ),
+      if (discrepancy != null && discrepancy != 0) ...[
+        const SizedBox(height: 10),
+        NoticeBox(S.discrepancyNote, color: kPrimaryColor),
+      ],
 
-      SectionTitle(S.money, icon: AppIcons.money),
-      StatGrid(tiles: [
-        StatTile(
-          label: S.received,
-          value: Fmt.money(report.collectedAmount),
-          icon: AppIcons.collected,
-          color: kPositiveColor,
-        ),
-        StatTile(
-          label: S.handedOver,
-          value: Fmt.money(report.submittedAmount),
-          icon: AppIcons.submitted,
-        ),
-        StatTile(
-          label: S.confirmedMoney,
-          value: Fmt.money(report.confirmedAmount),
-          icon: AppIcons.confirmed,
-          color: kPositiveColor,
-        ),
-        StatTile(
-          label: S.outstanding,
-          value: Fmt.money(report.outstandingAmount),
-          icon: AppIcons.outstanding,
-          color: kWarningColor,
-        ),
-        StatTile(
-          label: S.declaredByPackets,
-          value: Fmt.money(report.declaredHandoffAmount),
-          icon: AppIcons.handoff,
-          hint: S.declaredByPacketsHint,
-        ),
-        StatTile(
-          label: S.discrepancy,
-          value: Fmt.signedMoney(discrepancy),
-          icon: AppIcons.warning,
-          color: discrepancy == null
-              ? kBlackColor
-              : discrepancy < 0
-                  ? kNegativeColor
-                  : discrepancy > 0
-                      ? kWarningColor
-                      : kPositiveColor,
-          hint: S.discrepancyHint,
-        ),
-      ]),
-      const SizedBox(height: 10),
-      NoticeBox(S.discrepancyNote, color: kPrimaryColor),
+      // ── Orders, the same shape so the two read as a pair ───────────────
+      const SizedBox(height: 12),
+      _HeadlineCard(
+        icon: AppIcons.orders,
+        accent: kPrimaryColor,
+        caption: S.createdOrders,
+        value: Fmt.count(overview.createdOrders),
+        rows: [
+          _Row(S.cancelledNow, Fmt.count(overview.cancelledOrders),
+              color: kNegativeColor),
+          _Row(S.cancelShare, Fmt.percent(overview.cancellationRate)),
+          _Row(S.cancelEvents, Fmt.count(overview.cancellationEvents)),
+          _Row(S.editEvents, Fmt.count(overview.editEvents)),
+          _Row(S.foodAmount, Fmt.money(overview.foodAmount)),
+        ],
+      ),
 
-      const SizedBox(height: 22),
+      const SizedBox(height: 18),
       DailyOrdersChart(
         points: alignOrders(month, bundle.overview.daily),
         onDayTap: (day) => _openDay(context, day, OrderBasis.created),
@@ -159,17 +121,16 @@ class MonthPage extends StatelessWidget {
 
       if (bundle.overview.districts.isNotEmpty) ...[
         SectionTitle(S.districts, icon: AppIcons.address),
-        _NamedList(rows: bundle.overview.districts),
+        _CountList(rows: bundle.overview.districts),
       ],
       if (bundle.overview.branches.isNotEmpty) ...[
         SectionTitle(S.kitchens, icon: AppIcons.branch),
-        _NamedList(rows: bundle.overview.branches),
+        _CountList(rows: bundle.overview.branches),
       ],
       if (bundle.overview.cancellationReasons.isNotEmpty) ...[
         SectionTitle(S.cancelReasons, icon: AppIcons.cancelled),
-        _NamedList(rows: bundle.overview.cancellationReasons),
+        _CountList(rows: bundle.overview.cancellationReasons),
       ],
-
       if (bundle.overview.mostOrderedProducts.isNotEmpty) ...[
         SectionTitle(S.mostOrdered, icon: AppIcons.ranking),
         _ProductList(rows: bundle.overview.mostOrderedProducts),
@@ -210,8 +171,87 @@ class MonthPage extends StatelessWidget {
   }
 }
 
-class _NamedList extends StatelessWidget {
-  const _NamedList({required this.rows});
+class _Row {
+  const _Row(this.label, this.value, {this.color});
+
+  final String label;
+  final String value;
+  final Color? color;
+}
+
+/// One headline figure with its supporting rows.
+///
+/// This replaced a grid of six equal tiles: six numbers of the same size say
+/// nothing about which one to read first.
+class _HeadlineCard extends StatelessWidget {
+  const _HeadlineCard({
+    required this.icon,
+    required this.accent,
+    required this.caption,
+    required this.value,
+    required this.rows,
+  });
+
+  final List<List<dynamic>> icon;
+  final Color accent;
+  final String caption;
+  final String value;
+  final List<_Row> rows;
+
+  @override
+  Widget build(BuildContext context) => CardBox(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                AppIconBadge(icon, color: accent, size: 42),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        caption,
+                        style: const TextStyle(
+                          fontFamily: gilroyMedium,
+                          fontSize: 12.5,
+                          color: kMutedColor,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          value,
+                          style: TextStyle(
+                            fontFamily: gilroyBold,
+                            fontSize: 24,
+                            color: accent,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            if (rows.isNotEmpty) const Divider(height: 20, color: kBorderColor),
+            for (final row in rows)
+              InfoRow(
+                label: row.label,
+                value: row.value,
+                valueColor: row.color ?? kBlackColor,
+              ),
+          ],
+        ),
+      );
+}
+
+class _CountList extends StatelessWidget {
+  const _CountList({required this.rows});
 
   final List<NamedCount> rows;
 
@@ -219,18 +259,14 @@ class _NamedList extends StatelessWidget {
   Widget build(BuildContext context) {
     final top = rows.fold<int>(
         0, (best, row) => (row.count ?? 0) > best ? (row.count ?? 0) : best);
-    return CardBox(
-      child: Column(
-        children: [
-          for (final row in rows)
-            NamedCountRow(
-              // An unknown district is shown as such, never guessed.
-              name: Fmt.text(row.name),
-              count: row.count,
-              amount: row.foodAmount,
-              share: top == 0 ? 0 : (row.count ?? 0) / top,
-            ),
-        ],
+    return ExpandableList(
+      itemCount: rows.length,
+      itemBuilder: (context, i) => NamedCountRow(
+        // An unknown district is shown as such, never guessed.
+        name: Fmt.text(rows[i].name),
+        count: rows[i].count,
+        amount: rows[i].foodAmount,
+        share: top == 0 ? 0 : (rows[i].count ?? 0) / top,
       ),
     );
   }
@@ -247,16 +283,12 @@ class _ProductList extends StatelessWidget {
         0,
         (best, row) =>
             (row.quantity ?? 0) > best ? (row.quantity ?? 0) : best);
-    return CardBox(
-      child: Column(
-        children: [
-          for (final row in rows)
-            NamedCountRow(
-              name: Fmt.text(row.name),
-              count: row.quantity,
-              share: top == 0 ? 0 : (row.quantity ?? 0) / top,
-            ),
-        ],
+    return ExpandableList(
+      itemCount: rows.length,
+      itemBuilder: (context, i) => NamedCountRow(
+        name: Fmt.text(rows[i].name),
+        count: rows[i].quantity,
+        share: top == 0 ? 0 : (rows[i].quantity ?? 0) / top,
       ),
     );
   }

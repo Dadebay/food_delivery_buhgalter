@@ -35,6 +35,14 @@ class Labels {
             _t('Статус заказа изменён', 'Sargydyň ýagdaýy üýtgedi'),
         'order.request.rejected':
             _t('Действие с заказом отклонено', 'Sargyt hereketi ret edildi'),
+        'app.request.rejected': _t(
+          'Запрос из приложения отклонён',
+          'Programmadan gelen soraw ret edildi',
+        ),
+        'users.request.rejected': _t(
+          'Запрос по сотрудникам отклонён',
+          'Işgärler boýunça soraw ret edildi',
+        ),
         'cash_handoff.submitted':
             _t('Деньги смены переданы', 'Çalşygyň puly tabşyryldy'),
         'cash_handoff.confirmed':
@@ -49,8 +57,17 @@ class Labels {
         ),
       };
 
-  static String auditAction(String? action) =>
-      auditActions[action] ?? _t('Изменение записи', 'Ýazgynyň üýtgemegi');
+  /// An action this build does not know is never hidden. A rejected request
+  /// is recognised by its shape even when the section is one the app has not
+  /// been told about, because «запрос отклонён» is the part that matters.
+  static String auditAction(String? action) {
+    final known = auditActions[action];
+    if (known != null) return known;
+    if (action != null && action.endsWith('.request.rejected')) {
+      return _t('Запрос отклонён', 'Soraw ret edildi');
+    }
+    return _t('Изменение записи', 'Ýazgynyň üýtgemegi');
+  }
 
   static bool isKnownAction(String? action) =>
       action != null && auditActions.containsKey(action);
@@ -198,6 +215,8 @@ class Labels {
         'order.historical-cash-reconciled' ||
         'order.historical-completion-requested' =>
           AppIcons.history,
-        _ => AppIcons.details,
+        _ => (action ?? '').endsWith('.request.rejected')
+            ? AppIcons.cancelled
+            : AppIcons.details,
       };
 }

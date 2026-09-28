@@ -12,6 +12,7 @@ import '../../data/models/overview.dart';
 import '../../data/models/shift.dart';
 import '../../data/strings.dart';
 import '../../widgets/async_loader.dart';
+import '../../widgets/expandable_list.dart';
 import '../../widgets/ui.dart';
 import '../audit/audit_page.dart';
 import '../carryover/carryover_screen.dart';
@@ -188,30 +189,22 @@ class _ShiftDetailPageState extends State<ShiftDetailPage> {
 
               if (overview.cancellationReasons.isNotEmpty) ...[
                 SectionTitle(S.cancelReasons, icon: AppIcons.cancelled),
-                CardBox(
-                  child: Column(
-                    children: [
-                      for (final reason in overview.cancellationReasons)
-                        NamedCountRow(
-                          name: Fmt.text(reason.name),
-                          count: reason.count,
-                          amount: reason.foodAmount,
-                        ),
-                    ],
+                ExpandableList(
+                  itemCount: overview.cancellationReasons.length,
+                  itemBuilder: (context, i) => NamedCountRow(
+                    name: Fmt.text(overview.cancellationReasons[i].name),
+                    count: overview.cancellationReasons[i].count,
+                    amount: overview.cancellationReasons[i].foodAmount,
                   ),
                 ),
               ],
               if (overview.mostOrderedProducts.isNotEmpty) ...[
                 SectionTitle(S.dishDemand, icon: AppIcons.dish),
-                CardBox(
-                  child: Column(
-                    children: [
-                      for (final product in overview.mostOrderedProducts)
-                        NamedCountRow(
-                          name: Fmt.text(product.name),
-                          count: product.quantity,
-                        ),
-                    ],
+                ExpandableList(
+                  itemCount: overview.mostOrderedProducts.length,
+                  itemBuilder: (context, i) => NamedCountRow(
+                    name: Fmt.text(overview.mostOrderedProducts[i].name),
+                    count: overview.mostOrderedProducts[i].quantity,
                   ),
                 ),
               ],

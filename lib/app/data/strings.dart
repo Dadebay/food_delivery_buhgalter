@@ -449,6 +449,14 @@ class S {
         'Žurnal basyşlary däl, iş hereketlerini belleýär. Ol puluň we '
             'galyndylaryň fiziki deňeşdirilmesini çalyşmaýar.',
       );
+  static String get authorNotRecorded =>
+      _t('Автор не сохранён', 'Awtor saklanmadyk');
+  static String showAll(int count) =>
+      _t('Показать все ($count)', 'Ählisini görkez ($count)');
+  static String get showLess => _t('Свернуть', 'Ýygna');
+  static String get filter => _t('Фильтр', 'Süzgüç');
+  static String get chooseSection => _t('Раздел', 'Bölüm');
+  static String get chooseAction => _t('Действие', 'Hereket');
   static String get whatChanged => _t('Что изменилось', 'Näme üýtgedi');
   static String changedFields(String list) =>
       _t('Изменено: $list', 'Üýtgedi: $list');

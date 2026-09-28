@@ -112,13 +112,26 @@ class _ShiftsData {
   final List<ShiftSummary> shifts;
   final AccountingSettings? settings;
 
-  /// Two shifts under one calendar day, in the order the server sent them.
+  /// Two shifts under one calendar day, newest day first.
+  ///
+  /// The books are read from today backwards, so today sits at the top and
+  /// nobody scrolls the whole month to reach the shift they are standing in.
+  /// Within a day the later shift comes first for the same reason.
   Map<String, List<ShiftSummary>> get grouped {
     final result = <String, List<ShiftSummary>>{};
     for (final shift in shifts) {
       result.putIfAbsent(shift.dayKey, () => []).add(shift);
     }
-    return result;
+    for (final day in result.values) {
+      day.sort((a, b) {
+        final byStart = (b.startsAt ?? DateTime(0))
+            .compareTo(a.startsAt ?? DateTime(0));
+        // Without times to compare, `second` still belongs above `first`.
+        return byStart != 0 ? byStart : b.slot.compareTo(a.slot);
+      });
+    }
+    final days = result.keys.toList()..sort((a, b) => b.compareTo(a));
+    return {for (final day in days) day: result[day]!};
   }
 }
 

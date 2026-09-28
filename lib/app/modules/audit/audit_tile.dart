@@ -71,11 +71,16 @@ class AuditTile extends StatelessWidget {
                             ),
                           ),
                         Text(
-                          actor ?? kUnknown,
-                          style: const TextStyle(
-                            fontFamily: gilroyMedium,
+                          // A rejected request often has no author saved at
+                          // all; saying so beats a bare "unknown" that reads
+                          // like a missing name.
+                          actor ?? S.authorNotRecorded,
+                          style: TextStyle(
+                            fontFamily: actor == null
+                                ? gilroyRegular
+                                : gilroyMedium,
                             fontSize: 12.5,
-                            color: kBlackColor,
+                            color: actor == null ? kMutedColor : kBlackColor,
                           ),
                         ),
                         Text(
@@ -109,12 +114,21 @@ class AuditTile extends StatelessWidget {
             ),
           ] else if (!Labels.isKnownAction(entry.action)) ...[
             const SizedBox(height: 8),
-            Text(
-              S.eventNamed(entry.action ?? kUnknown),
-              style: const TextStyle(
-                fontFamily: gilroyRegular,
-                fontSize: 12,
-                color: kMutedColor,
+            // The raw event code, kept visible but clearly technical, so an
+            // action this build does not know is never silently dropped.
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: kSurfaceColor,
+                borderRadius: borderRadius10,
+              ),
+              child: Text(
+                entry.action ?? kUnknown,
+                style: const TextStyle(
+                  fontFamily: 'monospace',
+                  fontSize: 11,
+                  color: kMutedColor,
+                ),
               ),
             ),
           ],
@@ -200,7 +214,7 @@ class _AuditDetails extends StatelessWidget {
                 ),
               InfoRow(
                 label: S.staff,
-                value: entry.actor?.fullName ?? kUnknown,
+                value: entry.actor?.fullName ?? S.authorNotRecorded,
                 icon: AppIcons.person,
               ),
               InfoRow(

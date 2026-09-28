@@ -48,6 +48,7 @@ class PagedListState<T> extends State<PagedList<T>> {
   int _limit = kPageSize;
   bool _loading = true;
   bool _loadingMore = false;
+  bool _loadScheduled = false;
   Object? _error;
 
   bool get _hasMore => _page * _limit < _total;
@@ -80,6 +81,19 @@ class PagedListState<T> extends State<PagedList<T>> {
   }
 
   Future<void> refresh() => _reset();
+
+  /// Scroll notifications are dispatched while the list is laying out, so
+  /// asking for the next page there would call setState during a build. The
+  /// request is put on the next frame instead, and the flag keeps a fast
+  /// scroll from queueing the same request many times over.
+  void _scheduleLoadMore() {
+    if (_loading || _loadingMore || _loadScheduled || !_hasMore) return;
+    _loadScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadScheduled = false;
+      if (mounted) _loadMore();
+    });
+  }
 
   Future<void> _loadMore() async {
     if (_loading || _loadingMore || !_hasMore) return;
@@ -154,7 +168,7 @@ class PagedListState<T> extends State<PagedList<T>> {
         onNotification: (notification) {
           if (notification.metrics.pixels >=
               notification.metrics.maxScrollExtent - 240) {
-            _loadMore();
+            _scheduleLoadMore();
           }
           return false;
         },

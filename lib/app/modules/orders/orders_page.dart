@@ -10,6 +10,7 @@ import '../../data/formatting.dart';
 import '../../data/labels.dart';
 import '../../data/models/order.dart';
 import '../../data/strings.dart';
+import '../../widgets/filter_sheet.dart';
 import '../../widgets/paged_list.dart';
 import '../../widgets/ui.dart';
 import 'order_detail_page.dart';
@@ -152,9 +153,20 @@ class _OrdersPageState extends State<OrdersPage> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                _StatusButton(
-                  status: _status,
-                  onChanged: (status) => setState(() => _status = status),
+                FilterButton(
+                  compact: _status == null,
+                  active: _status != null,
+                  label: Labels.orderStatus(_status),
+                  onTap: () async {
+                    final choice = await showFilterSheet(
+                      context,
+                      title: S.status,
+                      entries: Labels.orderStatuses,
+                      selected: _status,
+                      noneLabel: S.allStatuses,
+                    );
+                    if (choice != null) setState(() => _status = choice.value);
+                  },
                 ),
               ],
             ),
@@ -251,60 +263,6 @@ class _BasisSwitch extends StatelessWidget {
       ),
     );
   }
-}
-
-class _StatusButton extends StatelessWidget {
-  const _StatusButton({required this.status, required this.onChanged});
-
-  final String? status;
-  final ValueChanged<String?> onChanged;
-
-  @override
-  Widget build(BuildContext context) => Container(
-        height: 44,
-        decoration: BoxDecoration(
-          color: status == null ? Colors.white : kPrimaryColor,
-          border: Border.all(color: kBorderColor),
-          borderRadius: borderRadius10,
-        ),
-        child: PopupMenuButton<String>(
-          tooltip: S.status,
-          padding: EdgeInsets.zero,
-          onSelected: (value) => onChanged(value.isEmpty ? null : value),
-          itemBuilder: (context) => [
-            PopupMenuItem<String>(value: '', child: Text(S.allStatuses)),
-            for (final entry in Labels.orderStatuses.entries)
-              PopupMenuItem<String>(value: entry.key, child: Text(entry.value)),
-          ],
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                AppIcon(AppIcons.filter,
-                    size: 17,
-                    color: status == null ? kPrimaryColor : Colors.white),
-                if (status != null) ...[
-                  const SizedBox(width: 6),
-                  ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 90),
-                    child: Text(
-                      Labels.orderStatus(status),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontFamily: gilroySemiBold,
-                        fontSize: 12,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ),
-      );
 }
 
 /// One order in a list: number, state, when, who, and the total.

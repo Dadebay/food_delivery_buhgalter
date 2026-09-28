@@ -85,6 +85,8 @@ class AppIcons {
   static const List<List<dynamic>> districts = HugeIcons.strokeRoundedPieChart;
   static const List<List<dynamic>> ranking = HugeIcons.strokeRoundedBarChart;
   static const List<List<dynamic>> details = HugeIcons.strokeRoundedLayers01;
+  static const List<List<dynamic>> expand = HugeIcons.strokeRoundedArrowDown01;
+  static const List<List<dynamic>> collapse = HugeIcons.strokeRoundedArrowUp01;
 }
 
 /// A Hugeicon with this app's defaults, so screens never repeat the size and
