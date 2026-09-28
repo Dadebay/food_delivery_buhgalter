@@ -185,6 +185,25 @@ class AccountingService {
     );
   }
 
+  /// Creating a money packet is an administrator/owner action, never the
+  /// accountant's: the screens hide the button for anyone else and the
+  /// server refuses it regardless.
+  Future<CashHandoff?> createHandoff({
+    required String shiftKey,
+    double? declaredAmount,
+    String? note,
+  }) async {
+    final trimmed = note?.trim();
+    return CashHandoff.fromJson(
+      await _api.post('accounting/handoffs', body: {
+        'shiftKey': shiftKey,
+        if (declaredAmount != null) 'declaredAmount': declaredAmount,
+        if (trimmed != null && trimmed.isNotEmpty)
+          'note': trimmed.length > 500 ? trimmed.substring(0, 500) : trimmed,
+      }),
+    );
+  }
+
   /// A month, built from the three range calls the spec prescribes. There is
   /// no `/monthly`; the rest of the pages load when their section is opened
   /// rather than being downloaded to build charts.
