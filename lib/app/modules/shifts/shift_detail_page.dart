@@ -5,6 +5,7 @@ import '../../constants/constants.dart';
 import '../../data/accounting_service.dart';
 import '../../data/app_state.dart';
 import '../../data/ashgabat_time.dart';
+import '../../data/auth_service.dart';
 import '../../data/formatting.dart';
 import '../../data/labels.dart';
 import '../../data/models/overview.dart';
@@ -339,7 +340,7 @@ class _ShiftDetailPageState extends State<ShiftDetailPage> {
                             size: 18, color: Colors.white),
                         label: Text(
                           S.confirmAmount,
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontFamily: gilroySemiBold,
                             color: Colors.white,
                           ),
@@ -366,7 +367,7 @@ class _ShiftDetailPageState extends State<ShiftDetailPage> {
                       icon: const AppIcon(AppIcons.handoff, size: 18),
                       label: Text(
                         S.createPacket,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontFamily: gilroySemiBold,
                           color: kPrimaryColor,
                         ),

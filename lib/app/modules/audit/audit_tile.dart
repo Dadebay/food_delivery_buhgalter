@@ -380,7 +380,7 @@ class _Side extends StatelessWidget {
           children: [
             Text(
               title,
-              style: TextStyle(
+              style: const TextStyle(
                 fontFamily: gilroyMedium,
                 fontSize: 11.5,
                 color: color,
@@ -420,7 +420,7 @@ class _ItemsComparison extends StatelessWidget {
           children: [
             Text(
               Labels.field('items'),
-              style: TextStyle(
+              style: const TextStyle(
                 fontFamily: gilroySemiBold,
                 fontSize: 14,
                 color: kBlackColor,
@@ -465,7 +465,7 @@ class _ItemsComparison extends StatelessWidget {
                       const SizedBox(width: 8),
                       Text(
                         text,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontFamily: gilroyMedium,
                           fontSize: 12,
                           color: color,
@@ -513,7 +513,7 @@ class _TechnicalDetails extends StatelessWidget {
           childrenPadding: EdgeInsets.zero,
           title: Text(
             S.technicalDetails,
-            style: TextStyle(
+            style: const TextStyle(
               fontFamily: gilroySemiBold,
               fontSize: 13.5,
               color: kMutedColor,

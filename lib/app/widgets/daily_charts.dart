@@ -179,7 +179,7 @@ class DailyMoneyChart extends StatelessWidget {
               isCurved: false,
               color: kPositiveColor,
               barWidth: 2,
-              dotData: FlDotData(show: false),
+              dotData: const FlDotData(show: false),
               belowBarData: BarAreaData(
                 show: true,
                 // ignore: deprecated_member_use
@@ -204,7 +204,7 @@ FlGridData _grid() => FlGridData(
       show: true,
       drawVerticalLine: false,
       getDrawingHorizontalLine: (_) =>
-          FlLine(color: kBorderColor, strokeWidth: 1),
+          const FlLine(color: kBorderColor, strokeWidth: 1),
     );
 
 FlTitlesData _titles(
@@ -214,8 +214,8 @@ FlTitlesData _titles(
 }) =>
     FlTitlesData(
       show: true,
-      topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-      rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+      topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+      rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
       leftTitles: AxisTitles(
         sideTitles: SideTitles(
           showTitles: true,

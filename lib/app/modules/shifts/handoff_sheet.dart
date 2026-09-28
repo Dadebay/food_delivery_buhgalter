@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../constants/app_icons.dart';
 import '../../constants/constants.dart';
 import '../../data/api_client.dart';
 import '../../data/app_state.dart';
@@ -47,7 +46,7 @@ Future<void> confirmHandoff(
           children: [
             Text(
               S.confirmPacketTitle,
-              style: TextStyle(
+              style: const TextStyle(
                 fontFamily: gilroyBold,
                 fontSize: 19,
                 color: kBlackColor,
@@ -165,7 +164,7 @@ Future<void> confirmHandoff(
                       )
                     : Text(
                         S.confirm,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontFamily: gilroySemiBold,
                           fontSize: 16,
                           color: Colors.white,
@@ -223,7 +222,7 @@ Future<void> createHandoff(
           children: [
             Text(
               S.createPacketTitle,
-              style: TextStyle(
+              style: const TextStyle(
                 fontFamily: gilroyBold,
                 fontSize: 19,
                 color: kBlackColor,
@@ -333,7 +332,7 @@ Future<void> createHandoff(
                       )
                     : Text(
                         S.create,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontFamily: gilroySemiBold,
                           fontSize: 16,
                           color: Colors.white,

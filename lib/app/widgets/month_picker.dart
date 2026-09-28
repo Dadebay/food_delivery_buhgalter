@@ -19,8 +19,8 @@ class MonthAction extends StatelessWidget {
       builder: (context, _) => Padding(
         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
         child: Material(
-          color: // ignore: deprecated_member_use
-          kPrimaryColor.withOpacity(0.10),
+          // ignore: deprecated_member_use
+          color: kPrimaryColor.withOpacity(0.10),
           borderRadius: borderRadius30,
           child: InkWell(
             borderRadius: borderRadius30,

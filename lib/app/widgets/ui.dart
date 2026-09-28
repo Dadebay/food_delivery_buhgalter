@@ -216,7 +216,7 @@ class StatTile extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               value,
-              style: TextStyle(
+              style: const TextStyle(
                 fontFamily: gilroyBold,
                 fontSize: 18,
                 color: color,
@@ -385,7 +385,7 @@ class Pill extends StatelessWidget {
             Flexible(
               child: Text(
                 text,
-                style: TextStyle(
+                style: const TextStyle(
                   fontFamily: gilroySemiBold,
                   fontSize: 11.5,
                   color: color,
@@ -423,7 +423,7 @@ class NoticeBox extends StatelessWidget {
             Expanded(
               child: Text(
                 text,
-                style: TextStyle(
+                style: const TextStyle(
                   fontFamily: gilroyMedium,
                   fontSize: 12.5,
                   color: color,

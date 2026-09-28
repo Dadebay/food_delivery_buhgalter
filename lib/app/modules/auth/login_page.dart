@@ -195,7 +195,7 @@ class _LoginPageState extends State<LoginPage> {
           children: [
             Row(
               children: [
-                _StepDot(active: true),
+                const _StepDot(active: true),
                 const SizedBox(width: 6),
                 _StepDot(active: _codeRequested),
                 const SizedBox(width: 10),
@@ -331,7 +331,7 @@ class _LoginPageState extends State<LoginPage> {
                   padding: EdgeInsets.fromLTRB(14, 0, 8, 0),
                   child: Text(
                     '+993',
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontFamily: gilroyBold,
                       fontSize: 17,
                       color: kBlackColor,

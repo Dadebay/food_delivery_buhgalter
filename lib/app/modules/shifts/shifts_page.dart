@@ -4,6 +4,7 @@ import '../../constants/app_icons.dart';
 import '../../constants/constants.dart';
 import '../../data/app_state.dart';
 import '../../data/ashgabat_time.dart';
+import '../../data/auth_service.dart';
 import '../../data/formatting.dart';
 import '../../data/labels.dart';
 import '../../data/models/shift.dart';
