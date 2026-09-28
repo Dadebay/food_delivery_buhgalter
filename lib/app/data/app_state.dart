@@ -5,6 +5,7 @@ import 'accounting_service.dart';
 import 'api_client.dart';
 import 'ashgabat_time.dart';
 import 'auth_service.dart';
+import 'language.dart';
 import 'models/shift.dart';
 
 /// The single place the screens reach for the API.
@@ -21,6 +22,7 @@ class App {
   late final AuthService auth = AuthService(api);
   late final AccountingService accounting = AccountingService(api);
   final PeriodStore period = PeriodStore();
+  final LanguageStore language = LanguageStore();
 
   AccountingSettings? _settings;
   Future<AccountingSettings>? _settingsRequest;

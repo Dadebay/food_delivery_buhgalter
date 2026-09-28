@@ -1,22 +1,43 @@
 import 'package:intl/intl.dart';
 
+import 'app_state.dart';
+
 /// Everything in this app is measured in Ashgabat time, UTC+5, with no
 /// daylight saving.
 ///
 /// The phone's own timezone is never used to decide which day or which shift
 /// a record belongs to: an accountant checking the books from another country
-/// must see the same month boundaries as the office. Dates are formatted for
-/// display from the server's instants converted into this offset, and the
-/// calendar parameters sent back (`fromDate`, `toDate`) are plain dates in it.
+/// must see the same month boundaries as the office.
+///
+/// Month names are carried here rather than taken from the `intl` locale
+/// database, because the app speaks Turkmen as well and the two languages
+/// have to be spelled the same way everywhere.
 class Ashgabat {
   const Ashgabat._();
 
   static const Duration offset = Duration(hours: 5);
 
+  static const List<String> _ruMonths = [
+    'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
+    'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь',
+  ];
+
+  /// Russian needs the genitive for "27 сентября 2026".
+  static const List<String> _ruMonthsOfDay = [
+    'января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
+    'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря',
+  ];
+
+  static const List<String> _tmMonths = [
+    'Ýanwar', 'Fewral', 'Mart', 'Aprel', 'Maý', 'Iýun',
+    'Iýul', 'Awgust', 'Sentýabr', 'Oktýabr', 'Noýabr', 'Dekabr',
+  ];
+
+  static bool get _turkmen => App.instance.language.isTurkmen;
+
   /// The given instant as an Ashgabat wall clock, carried as a "local" value
   /// purely so the formatters below read its fields directly.
-  static DateTime toLocal(DateTime instant) =>
-      instant.toUtc().add(offset);
+  static DateTime toLocal(DateTime instant) => instant.toUtc().add(offset);
 
   /// Right now, in Ashgabat.
   static DateTime now() => toLocal(DateTime.now());
@@ -45,19 +66,31 @@ class Ashgabat {
     return [for (var d = 1; d <= last; d++) DateTime(month.year, month.month, d)];
   }
 
-  static String monthLabel(DateTime month, String locale) =>
-      DateFormat('LLLL yyyy', locale).format(month);
+  /// «Сентябрь» / «Sentýabr».
+  static String monthName(DateTime month) {
+    final index = (month.month - 1).clamp(0, 11);
+    return _turkmen ? _tmMonths[index] : _ruMonths[index];
+  }
 
-  static String dayLabel(DateTime day, String locale) =>
-      DateFormat('d MMMM yyyy', locale).format(day);
+  /// «Сентябрь 2026» / «Sentýabr 2026».
+  static String monthLabel(DateTime month) =>
+      '${monthName(month)} ${month.year}';
+
+  /// «27 сентября 2026» / «27 sentýabr 2026».
+  static String dayLabel(DateTime day) {
+    final index = (day.month - 1).clamp(0, 11);
+    final name = _turkmen ? _tmMonths[index].toLowerCase() : _ruMonthsOfDay[index];
+    return '${day.day} $name ${day.year}';
+  }
 
   static String shortDay(DateTime day) => DateFormat('d.MM').format(day);
 
-  /// An instant from the API, shown in Ashgabat time. Returns null for null
-  /// so callers can print "unknown" rather than today's date.
-  static String? dateTimeLabel(DateTime? instant, String locale) {
+  /// An instant from the API, shown in Ashgabat time as `27.09.2026, 14:53`.
+  /// Returns null for null so callers can print "unknown" rather than
+  /// today's date.
+  static String? dateTimeLabel(DateTime? instant) {
     if (instant == null) return null;
-    return DateFormat('d MMM yyyy, HH:mm', locale).format(toLocal(instant));
+    return DateFormat('dd.MM.yyyy, HH:mm').format(toLocal(instant));
   }
 
   static String? timeLabel(DateTime? instant) {

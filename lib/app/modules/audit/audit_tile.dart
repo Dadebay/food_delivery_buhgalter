@@ -8,7 +8,7 @@ import '../../data/ashgabat_time.dart';
 import '../../data/formatting.dart';
 import '../../data/labels.dart';
 import '../../data/models/audit.dart';
-import '../../widgets/month_bar.dart';
+import '../../data/strings.dart';
 import '../../widgets/ui.dart';
 
 /// One line of «Кто что сделал».
@@ -31,7 +31,7 @@ class AuditTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final when = Ashgabat.dateTimeLabel(entry.createdAt, kLocale);
+    final when = Ashgabat.dateTimeLabel(entry.createdAt);
     final actor = entry.actor?.fullName;
     return CardBox(
       onTap: () => showAuditDetails(context, entry, onOpenOrder: onOpenOrder),
@@ -97,7 +97,8 @@ class AuditTile extends StatelessWidget {
           if (entry.hasComparison) ...[
             const SizedBox(height: 8),
             Text(
-              'Изменено: ${entry.changedFields.map(Labels.field).join(', ')}',
+              S.changedFields(
+                  entry.changedFields.map(Labels.field).join(', ')),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
@@ -109,7 +110,7 @@ class AuditTile extends StatelessWidget {
           ] else if (!Labels.isKnownAction(entry.action)) ...[
             const SizedBox(height: 8),
             Text(
-              'Событие: ${entry.action ?? kUnknown}',
+              S.eventNamed(entry.action ?? kUnknown),
               style: const TextStyle(
                 fontFamily: gilroyRegular,
                 fontSize: 12,
@@ -193,23 +194,23 @@ class _AuditDetails extends StatelessWidget {
             children: [
               if (entry.orderNumber != null)
                 InfoRow(
-                  label: 'Заказ',
+                  label: S.order,
                   value: Fmt.orderNumber(entry.orderNumber),
                   icon: AppIcons.orders,
                 ),
               InfoRow(
-                label: 'Сотрудник',
+                label: S.staff,
                 value: entry.actor?.fullName ?? kUnknown,
                 icon: AppIcons.person,
               ),
               InfoRow(
-                label: 'Время',
-                value: Ashgabat.dateTimeLabel(entry.createdAt, kLocale) ??
+                label: S.time,
+                value: Ashgabat.dateTimeLabel(entry.createdAt) ??
                     kUnknown,
                 icon: AppIcons.day,
               ),
               InfoRow(
-                label: 'Раздел',
+                label: S.section,
                 value: Labels.entity(entry.entityType),
                 icon: AppIcons.details,
               ),
@@ -232,9 +233,9 @@ class _AuditDetails extends StatelessWidget {
               },
               icon: const AppIcon(AppIcons.orders,
                   size: 18, color: Colors.white),
-              label: const Text(
-                'Открыть заказ',
-                style: TextStyle(
+              label: Text(
+                S.openOrder,
+                style: const TextStyle(
                     fontFamily: gilroySemiBold, color: Colors.white),
               ),
             ),
@@ -242,12 +243,9 @@ class _AuditDetails extends StatelessWidget {
         ],
         if (!entry.hasComparison) ...[
           const SizedBox(height: 14),
-          const NoticeBox(
-            'Для этого события сохранённого сравнения нет. Старые записи без '
-            'снимка восстановить задним числом нельзя.',
-          ),
+          NoticeBox(S.noComparison),
         ] else ...[
-          const SectionTitle('Что изменилось', icon: AppIcons.edited),
+          SectionTitle(S.whatChanged, icon: AppIcons.edited),
           for (final field in fields)
             if (field == 'items')
               _ItemsComparison(entry: entry)
@@ -259,7 +257,7 @@ class _AuditDetails extends StatelessWidget {
               ),
         ],
         if (entry.relatedActors.isNotEmpty) ...[
-          const SectionTitle('Участники записи', icon: AppIcons.person),
+          SectionTitle(S.recordParticipants, icon: AppIcons.person),
           CardBox(
             child: Column(
               children: [
@@ -267,7 +265,7 @@ class _AuditDetails extends StatelessWidget {
                   InfoRow(
                     // The role is whatever the account says now, not what it
                     // said when the action happened.
-                    label: actor.role ?? 'Сотрудник',
+                    label: actor.role ?? S.staff,
                     value: actor.fullName ?? kUnknown,
                     icon: AppIcons.person,
                   ),
@@ -284,7 +282,7 @@ class _AuditDetails extends StatelessWidget {
   /// A saved value in the words the screen uses. Ids become names where the
   /// log carried them; everything else keeps its own shape.
   static String _render(AuditEntry entry, String field, dynamic value) {
-    if (value == null) return 'пусто';
+    if (value == null) return S.empty;
     switch (field) {
       case 'status':
         return Labels.orderStatus(value.toString());
@@ -304,7 +302,7 @@ class _AuditDetails extends StatelessWidget {
       case 'actorId':
         return entry.actorName(value.toString()) ?? value.toString();
       default:
-        if (value is bool) return value ? 'Да' : 'Нет';
+        if (value is bool) return value ? S.yes : S.no;
         if (value is Map || value is List) {
           return const JsonEncoder.withIndent('  ').convert(value);
         }
@@ -341,13 +339,13 @@ class _FieldComparison extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               _Side(
-                title: 'До изменения',
+                title: S.beforeChange,
                 value: before,
                 color: kNegativeColor,
               ),
               const SizedBox(height: 6),
               _Side(
-                title: 'После изменения',
+                title: S.afterChange,
                 value: after,
                 color: kPositiveColor,
               ),
@@ -420,8 +418,8 @@ class _ItemsComparison extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Состав',
+            Text(
+              Labels.field('items'),
               style: TextStyle(
                 fontFamily: gilroySemiBold,
                 fontSize: 14,
@@ -441,11 +439,11 @@ class _ItemsComparison extends StatelessWidget {
                             ? kMutedColor
                             : kWarningColor;
                 final text = was == null
-                    ? 'добавлено × ${now ?? 0}'
+                    ? '${S.changedItemAdded} × ${now ?? 0}'
                     : now == null
-                        ? 'убрано (было × $was)'
+                        ? S.itemRemoved('$was')
                         : was == now
-                            ? '× $now, без изменений'
+                            ? S.itemUnchanged('$now')
                             : '× $was → × $now';
                 return Padding(
                   padding: const EdgeInsets.symmetric(vertical: 5),
@@ -513,8 +511,8 @@ class _TechnicalDetails extends StatelessWidget {
         child: ExpansionTile(
           tilePadding: EdgeInsets.zero,
           childrenPadding: EdgeInsets.zero,
-          title: const Text(
-            'Технические детали',
+          title: Text(
+            S.technicalDetails,
             style: TextStyle(
               fontFamily: gilroySemiBold,
               fontSize: 13.5,

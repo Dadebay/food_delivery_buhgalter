@@ -6,6 +6,7 @@ import '../../data/accounting_service.dart';
 import '../../data/app_state.dart';
 import '../../data/labels.dart';
 import '../../data/models/audit.dart';
+import '../../data/strings.dart';
 import '../../widgets/paged_list.dart';
 import '../../widgets/ui.dart';
 import '../orders/order_detail_page.dart';
@@ -47,8 +48,8 @@ class _AuditPageState extends State<AuditPage> {
         child: PagedList<AuditEntry>(
           requestKey: _requestKey,
           storageKey: 'audit-${widget.period.query}',
-          emptyTitle: 'Действий нет',
-          emptyMessage: 'За выбранный период сохранённых действий нет.',
+          emptyTitle: S.noActions,
+          emptyMessage: S.noActionsMessage,
           fetch: (page) => App.instance.accounting.audit(
             period: widget.period,
             page: page,
@@ -78,7 +79,7 @@ class _AuditPageState extends State<AuditPage> {
                   child: _FilterMenu(
                     icon: AppIcons.journal,
                     label: _action == null
-                        ? 'Все действия'
+                        ? S.allActions
                         : Labels.auditAction(_action),
                     active: _action != null,
                     entries: {
@@ -93,7 +94,7 @@ class _AuditPageState extends State<AuditPage> {
                   child: _FilterMenu(
                     icon: AppIcons.details,
                     label: _entityType == null
-                        ? 'Все разделы'
+                        ? S.allSections
                         : Labels.entity(_entityType),
                     active: _entityType != null,
                     entries: Labels.entities,
@@ -104,12 +105,7 @@ class _AuditPageState extends State<AuditPage> {
               ],
             ),
             const SizedBox(height: 10),
-            const NoticeBox(
-              'Журнал фиксирует бизнес-действия, а не нажатия и перемещение '
-              'по меню. Он помогает проверке, но не заменяет физическую сверку '
-              'денег и остатков.',
-              color: kPrimaryColor,
-            ),
+            NoticeBox(S.journalNote, color: kPrimaryColor),
           ],
         ),
       );
@@ -144,7 +140,7 @@ class _FilterMenu extends StatelessWidget {
           padding: EdgeInsets.zero,
           onSelected: (value) => onSelected(value.isEmpty ? null : value),
           itemBuilder: (context) => [
-            const PopupMenuItem<String>(value: '', child: Text('Без фильтра')),
+            PopupMenuItem<String>(value: '', child: Text(S.noFilter)),
             for (final entry in entries.entries)
               PopupMenuItem<String>(
                 value: entry.key,

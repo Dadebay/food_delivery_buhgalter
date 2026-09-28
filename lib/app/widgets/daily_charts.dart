@@ -7,6 +7,7 @@ import '../data/ashgabat_time.dart';
 import '../data/formatting.dart';
 import '../data/models/overview.dart';
 import '../data/models/report.dart';
+import '../data/strings.dart';
 import 'ui.dart';
 
 /// One point of a daily chart, already placed on the month's own axis.
@@ -81,10 +82,10 @@ class DailyOrdersChart extends StatelessWidget {
     final maxValue = points.fold<double>(
         0, (best, point) => point.primary > best ? point.primary : best);
     return _ChartFrame(
-      title: 'Заказы по дням',
-      legend: const [
-        _Legend(color: kPrimaryColor, label: 'Создано'),
-        _Legend(color: kNegativeColor, label: 'Отменено'),
+      title: S.chartOrders,
+      legend: [
+        _Legend(color: kPrimaryColor, label: S.legendCreated),
+        _Legend(color: kNegativeColor, label: S.legendCancelled),
       ],
       child: BarChart(
         BarChartData(
@@ -148,10 +149,9 @@ class DailyMoneyChart extends StatelessWidget {
     final maxValue = points.fold<double>(
         0, (best, point) => point.primary > best ? point.primary : best);
     return _ChartFrame(
-      title: 'Получено денег за еду по дням',
-      legend: const [_Legend(color: kPositiveColor, label: 'Получено, TMT')],
-      footnote: 'Дни без поступлений сервер может не присылать — на оси они '
-          'показаны нулём.',
+      title: S.chartMoney,
+      legend: [_Legend(color: kPositiveColor, label: S.legendReceived)],
+      footnote: S.chartZeroNote,
       child: LineChart(
         LineChartData(
           minY: 0,
@@ -193,8 +193,9 @@ class DailyMoneyChart extends StatelessWidget {
   }
 
   static String _shortMoney(double value) {
-    if (value >= 1000000) return '${(value / 1000000).toStringAsFixed(1)}М';
-    if (value >= 1000) return '${(value / 1000).toStringAsFixed(0)}т';
+    // Language-neutral on purpose: an axis label has no room for a word.
+    if (value >= 1000000) return '${(value / 1000000).toStringAsFixed(1)}M';
+    if (value >= 1000) return '${(value / 1000).toStringAsFixed(0)}K';
     return value.toStringAsFixed(0);
   }
 }
@@ -302,7 +303,7 @@ class _ChartFrame extends StatelessWidget {
             SizedBox(height: 190, child: child),
             const SizedBox(height: 8),
             Text(
-              'Нажмите на день, чтобы открыть его заказы.',
+              S.chartTapHint,
               style: const TextStyle(
                 fontFamily: gilroyRegular,
                 fontSize: 11.5,

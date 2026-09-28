@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../constants/constants.dart';
 import '../data/formatting.dart';
 import '../data/models/paged.dart';
+import '../data/strings.dart';
 import 'state_views.dart';
 
 /// A `{items, total, page, limit}` list, paged the way the API pages.
@@ -19,8 +20,8 @@ class PagedList<T> extends StatefulWidget {
     required this.itemBuilder,
     this.header,
     this.storageKey,
-    this.emptyTitle = 'Записей нет',
-    this.emptyMessage = 'За выбранный период сервер ничего не вернул.',
+    this.emptyTitle,
+    this.emptyMessage,
     this.padding = const EdgeInsets.fromLTRB(16, 8, 16, 24),
     this.separator = 10,
   });
@@ -30,8 +31,8 @@ class PagedList<T> extends StatefulWidget {
   final Widget Function(BuildContext context, T item, int index) itemBuilder;
   final Widget? header;
   final String? storageKey;
-  final String emptyTitle;
-  final String emptyMessage;
+  final String? emptyTitle;
+  final String? emptyMessage;
   final EdgeInsets padding;
   final double separator;
 
@@ -195,8 +196,8 @@ class PagedListState<T> extends State<PagedList<T>> {
             ),
             TextButton(
               onPressed: () => _fetch(_page + 1, _generation),
-              child: const Text('Загрузить ещё',
-                  style: TextStyle(fontFamily: gilroySemiBold)),
+              child: Text(S.loadMore,
+                  style: const TextStyle(fontFamily: gilroySemiBold)),
             ),
           ],
         ),
@@ -208,8 +209,8 @@ class PagedListState<T> extends State<PagedList<T>> {
       child: Center(
         child: Text(
           _hasMore
-              ? 'Показано ${Fmt.count(_items.length)} из ${Fmt.count(_total)}'
-              : 'Всего записей: ${Fmt.count(_total)}',
+              ? S.shown(Fmt.count(_items.length), Fmt.count(_total))
+              : S.totalRecords(Fmt.count(_total)),
           style: const TextStyle(
             fontFamily: gilroyMedium,
             fontSize: 13,

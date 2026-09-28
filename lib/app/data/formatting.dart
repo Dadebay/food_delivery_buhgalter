@@ -1,9 +1,13 @@
 import 'package:intl/intl.dart';
 
+import 'strings.dart';
+
 /// What a missing value is called. The spec is explicit that absent names,
 /// staff and dates are shown as unknown rather than filled in with today's
 /// date or the nearest plausible person.
-const String kUnknown = 'неизвестно';
+String get kUnknown => S.unknown;
+
+/// Language-neutral placeholder for a value that has no meaning here at all.
 const String kDash = '—';
 
 class Fmt {
@@ -40,10 +44,12 @@ class Fmt {
   /// in full, never clamped back to the old 240 ceiling.
   static String minutes(int? value) {
     if (value == null) return kDash;
-    if (value < 60) return '$value мин';
+    if (value < 60) return '$value ${S.minutesShort}';
     final hours = value ~/ 60;
     final rest = value % 60;
-    return rest == 0 ? '$hours ч' : '$hours ч $rest мин';
+    return rest == 0
+        ? '$hours ${S.hoursShort}'
+        : '$hours ${S.hoursShort} $rest ${S.minutesShort}';
   }
 
   static String text(String? value) =>
@@ -51,5 +57,5 @@ class Fmt {
 
   /// «Заказ №27» — the visible number, which is not the UUID used for details.
   static String orderNumber(int? number) =>
-      number == null ? 'Заказ' : 'Заказ №$number';
+      number == null ? S.order : S.orderNo(number);
 }

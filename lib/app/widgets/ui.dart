@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../constants/app_icons.dart';
 import '../constants/constants.dart';
 import '../data/formatting.dart';
+import '../data/strings.dart';
 
 /// The app's page frame: a Hugeicon back button, a title and an optional
 /// subtitle that says which period is on screen.
@@ -36,7 +37,7 @@ class AppScaffold extends StatelessWidget {
             ? IconButton(
                 onPressed: () => Navigator.of(context).maybePop(),
                 icon: const AppIcon(AppIcons.back, color: kBlackColor),
-                tooltip: 'Назад',
+                tooltip: S.back,
               )
             : null,
         title: Column(

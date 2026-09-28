@@ -8,8 +8,8 @@ import '../../data/formatting.dart';
 import '../../data/labels.dart';
 import '../../data/models/audit.dart';
 import '../../data/models/order.dart';
+import '../../data/strings.dart';
 import '../../widgets/async_loader.dart';
-import '../../widgets/month_bar.dart';
 import '../../widgets/paged_list.dart';
 import '../../widgets/ui.dart';
 import '../audit/audit_tile.dart';
@@ -28,16 +28,17 @@ class OrderDetailPage extends StatelessWidget {
   Widget build(BuildContext context) => DefaultTabController(
         length: 2,
         child: AppScaffold(
-          title: 'Заказ',
-          subtitle: 'Состав, участники и история',
-          bottom: const TabBar(
+          title: S.order,
+          subtitle: S.orderDetailsSub,
+          bottom: TabBar(
             labelColor: kPrimaryColor,
             unselectedLabelColor: kMutedColor,
             indicatorColor: kPrimaryColor,
-            labelStyle: TextStyle(fontFamily: gilroySemiBold, fontSize: 13.5),
+            labelStyle: const TextStyle(
+                fontFamily: gilroySemiBold, fontSize: 13.5),
             tabs: [
-              Tab(text: 'Заказ'),
-              Tab(text: 'История'),
+              Tab(text: S.orderTabOrder),
+              Tab(text: S.orderTabHistory),
             ],
           ),
           child: TabBarView(
@@ -97,24 +98,23 @@ class _OrderTab extends StatelessWidget {
         child: Column(
           children: [
             InfoRow(
-              label: 'Создан',
-              value: Ashgabat.dateTimeLabel(order.createdAt, kLocale) ??
-                  kUnknown,
+              label: S.created,
+              value: Ashgabat.dateTimeLabel(order.createdAt) ?? kUnknown,
               icon: AppIcons.day,
             ),
             InfoRow(
-              label: 'Источник',
+              label: S.source,
               value: Labels.orderSource(order.source),
               icon: AppIcons.orders,
             ),
             if ((order.branchName ?? '').isNotEmpty)
               InfoRow(
-                label: 'Кухня',
+                label: S.kitchen,
                 value: order.branchName!,
                 icon: AppIcons.branch,
               ),
             InfoRow(
-              label: 'Район',
+              label: S.district,
               // Districts come from the names saved on the order; an unknown
               // one is shown as unknown rather than guessed from the address.
               value: Fmt.text(order.deliveryEtrapName),
@@ -124,49 +124,48 @@ class _OrderTab extends StatelessWidget {
         ),
       ),
 
-      const SectionTitle('Клиент', icon: AppIcons.customer),
+      SectionTitle(S.customer, icon: AppIcons.customer),
       CardBox(
         child: Column(
           children: [
             InfoRow(
-                label: 'Имя',
+                label: S.name,
                 value: Fmt.text(order.customerName),
                 icon: AppIcons.customer),
             InfoRow(
-                label: 'Телефон',
+                label: S.phone,
                 value: Fmt.text(order.customerPhone),
                 icon: AppIcons.phone),
             if ((order.customerNote ?? '').trim().isNotEmpty)
               InfoRow(
-                  label: 'Пожелание',
+                  label: S.customerWish,
                   value: order.customerNote!.trim(),
                   icon: AppIcons.note),
           ],
         ),
       ),
 
-      const SectionTitle('Адрес', icon: AppIcons.address),
+      SectionTitle(S.address, icon: AppIcons.address),
       CardBox(
         child: Column(
           children: [
-            InfoRow(label: 'Адрес', value: Fmt.text(order.address)),
+            InfoRow(label: S.address, value: Fmt.text(order.address)),
             if ((order.entrance ?? '').isNotEmpty)
-              InfoRow(label: 'Подъезд', value: order.entrance!),
+              InfoRow(label: S.entrance, value: order.entrance!),
             if ((order.floor ?? '').isNotEmpty)
-              InfoRow(label: 'Этаж', value: order.floor!),
+              InfoRow(label: S.floor, value: order.floor!),
             if ((order.apartment ?? '').isNotEmpty)
-              InfoRow(label: 'Квартира', value: order.apartment!),
+              InfoRow(label: S.apartment, value: order.apartment!),
           ],
         ),
       ),
 
-      SectionTitle('Состав (${Fmt.count(order.items.length)})',
-          icon: AppIcons.dish),
+      SectionTitle(S.composition(order.items.length), icon: AppIcons.dish),
       if (order.items.isEmpty)
-        const CardBox(
+        CardBox(
           child: Text(
-            'Позиции не сохранены.',
-            style: TextStyle(
+            S.noItems,
+            style: const TextStyle(
                 fontFamily: gilroyRegular, fontSize: 13, color: kMutedColor),
           ),
         )
@@ -183,7 +182,7 @@ class _OrderTab extends StatelessWidget {
         ),
 
       if (order.gifts.isNotEmpty) ...[
-        const SectionTitle('Подарки', icon: AppIcons.gift),
+        SectionTitle(S.gifts, icon: AppIcons.gift),
         CardBox(
           child: Column(
             children: [
@@ -191,7 +190,7 @@ class _OrderTab extends StatelessWidget {
                 InfoRow(
                   label: Fmt.text(gift.name),
                   value: '× ${Fmt.count(gift.quantity)}'
-                      '${gift.totalPoints == null ? '' : ' · ${Fmt.count(gift.totalPoints)} баллов'}',
+                      '${gift.totalPoints == null ? '' : ' · ${S.points(Fmt.count(gift.totalPoints))}'}',
                   icon: AppIcons.gift,
                 ),
             ],
@@ -199,30 +198,29 @@ class _OrderTab extends StatelessWidget {
         ),
       ],
 
-      const SectionTitle('Суммы', icon: AppIcons.money),
+      SectionTitle(S.amounts, icon: AppIcons.money),
       CardBox(
         child: Column(
           children: [
-            InfoRow(label: 'Сумма позиций', value: Fmt.money(order.subtotal)),
-            InfoRow(label: 'Скидка', value: Fmt.money(order.discount)),
+            InfoRow(label: S.subtotal, value: Fmt.money(order.subtotal)),
+            InfoRow(label: S.discount, value: Fmt.money(order.discount)),
             InfoRow(
-              label: 'Сумма еды',
+              label: S.foodAmount,
               value: Fmt.money(order.foodAmount),
               icon: AppIcons.dish,
             ),
-            InfoRow(label: 'Доставка', value: Fmt.money(order.deliveryFee)),
-            InfoRow(
-                label: 'Итого', value: Fmt.money(order.total), strong: true),
+            InfoRow(label: S.delivery, value: Fmt.money(order.deliveryFee)),
+            InfoRow(label: S.total, value: Fmt.money(order.total), strong: true),
             if (order.loyaltyPointsEarned != null ||
                 order.loyaltyPointsSpent != null)
               InfoRow(
-                label: 'Баллы',
-                value: 'начислено ${Fmt.count(order.loyaltyPointsEarned)} · '
-                    'списано ${Fmt.count(order.loyaltyPointsSpent)}',
+                label: S.loyalty,
+                value: S.loyaltyValue(Fmt.count(order.loyaltyPointsEarned),
+                    Fmt.count(order.loyaltyPointsSpent)),
               ),
             if (order.rating != null)
               InfoRow(
-                label: 'Оценка',
+                label: S.rating,
                 value: '${order.rating}',
                 icon: AppIcons.rating,
               ),
@@ -230,29 +228,26 @@ class _OrderTab extends StatelessWidget {
         ),
       ),
 
-      const SectionTitle('Кто участвовал', icon: AppIcons.person),
+      SectionTitle(S.participants, icon: AppIcons.person),
       if (order.actualCourierUnknown)
-        const Padding(
-          padding: EdgeInsets.only(bottom: 10),
-          child: NoticeBox(
-            'Фактический курьер неизвестен: назначение сделано технически при '
-            'историческом закрытии заказа.',
-          ),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: NoticeBox(S.courierUnknownNote),
         ),
       CardBox(
         child: Column(
           children: [
             InfoRow(
-              label: 'Курьер',
+              label: S.courier,
               value: order.actualCourierUnknown
-                  ? 'неизвестен'
+                  ? S.courierUnknownShort
                   : (order.courier?.fullName ?? kUnknown),
               valueColor:
                   order.actualCourierUnknown ? kWarningColor : kBlackColor,
               icon: AppIcons.courier,
             ),
             InfoRow(
-              label: 'Повар',
+              label: S.cook,
               value: order.cook?.fullName ?? kUnknown,
               icon: AppIcons.cook,
             ),
@@ -306,10 +301,9 @@ class _OrderTab extends StatelessWidget {
                   ),
                 ),
               const SizedBox(height: 4),
-              const Text(
-                'Должность сотрудника сама по себе не доказывает, что он '
-                'готовил или доставлял этот заказ.',
-                style: TextStyle(
+              Text(
+                S.participantsNote,
+                style: const TextStyle(
                   fontFamily: gilroyRegular,
                   fontSize: 11.5,
                   color: kMutedColor,
@@ -320,29 +314,29 @@ class _OrderTab extends StatelessWidget {
         ),
       ),
 
-      const SectionTitle('Этапы', icon: AppIcons.transition),
+      SectionTitle(S.stages, icon: AppIcons.transition),
       CardBox(
         child: Column(
           children: [
             InfoRow(
-              label: 'Назначен курьеру',
-              value: Ashgabat.dateTimeLabel(order.assignedAt, kLocale) ??
+              label: S.assignedAt,
+              value: Ashgabat.dateTimeLabel(order.assignedAt) ??
                   kUnknown,
             ),
             InfoRow(
-              label: 'Сборка подтверждена',
+              label: S.packedAt,
               value:
-                  Ashgabat.dateTimeLabel(order.packingConfirmedAt, kLocale) ??
+                  Ashgabat.dateTimeLabel(order.packingConfirmedAt) ??
                       kUnknown,
             ),
             InfoRow(
-              label: 'Доставлен',
-              value: Ashgabat.dateTimeLabel(order.deliveredAt, kLocale) ??
+              label: S.deliveredAt,
+              value: Ashgabat.dateTimeLabel(order.deliveredAt) ??
                   kUnknown,
             ),
             InfoRow(
-              label: 'Завершён',
-              value: Ashgabat.dateTimeLabel(order.completedAt, kLocale) ??
+              label: S.completedAt,
+              value: Ashgabat.dateTimeLabel(order.completedAt) ??
                   kUnknown,
             ),
           ],
@@ -363,65 +357,62 @@ class _OrderTab extends StatelessWidget {
         ),
       ],
 
-      const SectionTitle('Деньги', icon: AppIcons.money),
+      SectionTitle(S.money, icon: AppIcons.money),
       if (settlement == null)
-        const CardBox(
+        CardBox(
           child: Text(
-            'Денежной записи по этому заказу нет.',
-            style: TextStyle(
+            S.noSettlement,
+            style: const TextStyle(
                 fontFamily: gilroyRegular, fontSize: 13, color: kMutedColor),
           ),
         )
       else ...[
         if (settlement.isHandoverDateUnknown)
-          const Padding(
-            padding: EdgeInsets.only(bottom: 10),
-            child: NoticeBox(
-              'Сверено; дата сдачи неизвестна. Такая запись не попадает ни в '
-              'сегодняшнюю смену, ни в денежный график по времени сверки.',
-            ),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: NoticeBox(S.handoverUnknownNote),
           ),
         CardBox(
           child: Column(
             children: [
-              InfoRow(label: 'Сумма', value: Fmt.money(settlement.amount)),
+              InfoRow(label: S.amount, value: Fmt.money(settlement.amount)),
               InfoRow(
-                label: 'Состояние',
+                label: S.state,
                 value: Fmt.text(settlement.status),
                 valueColor: settlement.isReconciled
                     ? kPositiveColor
                     : kBlackColor,
               ),
               InfoRow(
-                label: 'Деньги вернули',
+                label: S.cashReturned,
                 value: Ashgabat.dateTimeLabel(
-                        settlement.operatorTakenAt, kLocale) ??
+                        settlement.operatorTakenAt) ??
                     (settlement.isHandoverDateUnknown
-                        ? 'дата неизвестна'
+                        ? S.dateUnknown
                         : kUnknown),
                 valueColor: settlement.operatorTakenAt == null
                     ? kWarningColor
                     : kBlackColor,
               ),
               InfoRow(
-                label: 'Сверено',
+                label: S.reconciledAt,
                 value:
-                    Ashgabat.dateTimeLabel(settlement.reconciledAt, kLocale) ??
+                    Ashgabat.dateTimeLabel(settlement.reconciledAt) ??
                         kUnknown,
               ),
               InfoRow(
-                label: 'Оператор',
+                label: S.operator,
                 value: Fmt.text(settlement.operatorName),
                 icon: AppIcons.person,
               ),
               InfoRow(
-                label: 'Бухгалтер',
+                label: S.accountant,
                 value: Fmt.text(settlement.accountantName),
                 icon: AppIcons.person,
               ),
               if (settlement.cashHandoffId != null)
                 InfoRow(
-                  label: 'Денежный пакет',
+                  label: S.cashPacket,
                   value: settlement.cashHandoffId!,
                   icon: AppIcons.handoff,
                 ),
@@ -476,7 +467,7 @@ class _LineRow extends StatelessWidget {
           children: [
             Expanded(
               child: Text(
-                '${Fmt.money(line.unitPrice)} за штуку',
+                S.perPiece(Fmt.money(line.unitPrice)),
                 style: const TextStyle(
                   fontFamily: gilroyRegular,
                   fontSize: 12,
@@ -502,7 +493,7 @@ class _LineRow extends StatelessWidget {
               const SizedBox(width: 6),
               Text(
                 // 520 is a legal value and is printed in full.
-                'Готовится ${Fmt.minutes(line.preparationMinutes)}',
+                S.prepares(Fmt.minutes(line.preparationMinutes)),
                 style: const TextStyle(
                   fontFamily: gilroyRegular,
                   fontSize: 12,
@@ -546,7 +537,7 @@ class _TransitionRow extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             '${transition.actor?.fullName ?? kUnknown} · '
-            '${Ashgabat.dateTimeLabel(transition.createdAt, kLocale) ?? kUnknown}',
+            '${Ashgabat.dateTimeLabel(transition.createdAt) ?? kUnknown}',
             style: const TextStyle(
               fontFamily: gilroyRegular,
               fontSize: 12,
@@ -577,17 +568,13 @@ class _HistoryTab extends StatelessWidget {
   Widget build(BuildContext context) => PagedList<AuditEntry>(
         requestKey: 'order-audit-$orderId',
         storageKey: 'order-audit-$orderId',
-        emptyTitle: 'История пуста',
-        emptyMessage: 'По этому заказу сохранённых действий нет.',
+        emptyTitle: S.historyEmpty,
+        emptyMessage: S.historyEmptyMessage,
         fetch: (page) =>
             App.instance.accounting.orderAudit(orderId, page: page),
-        header: const Padding(
-          padding: EdgeInsets.only(bottom: 12),
-          child: NoticeBox(
-            'История заказа показывается целиком и не зависит от выбранного '
-            'в приложении периода.',
-            color: kPrimaryColor,
-          ),
+        header: Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: NoticeBox(S.historyNote, color: kPrimaryColor),
         ),
         itemBuilder: (context, entry, _) => AuditTile(entry: entry),
       );

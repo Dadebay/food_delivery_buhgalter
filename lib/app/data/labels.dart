@@ -3,108 +3,127 @@ import 'package:flutter/material.dart';
 import '../constants/app_icons.dart';
 import '../constants/constants.dart';
 import 'formatting.dart';
+import 'strings.dart';
+
+String _t(String ru, String tm) => S.pick(ru, tm);
 
 /// The wording dictionary, mirroring the web client's
 /// `widgets/accounting-dashboard/model/inspection.ts`.
 ///
 /// It is a dictionary of captions, not a second status machine: nothing here
 /// decides what happened, it only names what the server already said. An
-/// action this build does not know is never hidden — [auditActionLabel] falls
-/// back to «Изменение записи» and the screen shows the raw payload with it.
+/// action this build does not know is never hidden — [auditAction] falls back
+/// to «Изменение записи» and the screen shows the raw payload with it.
 class Labels {
   const Labels._();
 
-  static const Map<String, String> auditActions = {
-    'order.created': 'Заказ создан в приложении',
-    'order.created_by_staff': 'Заказ оформлен по телефону',
-    'order.admin-edited': 'Заказ отредактирован',
-    'order.cancelled': 'Заказ отменён',
-    'order.packing-confirmed': 'Сборка подтверждена',
-    'order.courier-assigned': 'Курьер назначен',
-    'order.courier-reassigned': 'Курьер заменён',
-    'order.transitioned': 'Статус заказа изменён',
-    'order.request.rejected': 'Действие с заказом отклонено',
-    'cash_handoff.submitted': 'Деньги смены переданы',
-    'cash_handoff.confirmed': 'Деньги смены подтверждены',
-    'order.historical-cash-reconciled': 'Отмечена ранее сданная оплата',
-    'order.historical-completion-requested':
-        'Историческое завершение по поручению владельца',
-  };
+  static Map<String, String> get auditActions => {
+        'order.created':
+            _t('Заказ создан в приложении', 'Sargyt programmada döredildi'),
+        'order.created_by_staff':
+            _t('Заказ оформлен по телефону', 'Sargyt telefon arkaly alyndy'),
+        'order.admin-edited':
+            _t('Заказ отредактирован', 'Sargyt üýtgedildi'),
+        'order.cancelled': _t('Заказ отменён', 'Sargyt ýatyryldy'),
+        'order.packing-confirmed':
+            _t('Сборка подтверждена', 'Ýygnalmagy tassyklandy'),
+        'order.courier-assigned':
+            _t('Курьер назначен', 'Kurýer bellenildi'),
+        'order.courier-reassigned':
+            _t('Курьер заменён', 'Kurýer çalşyryldy'),
+        'order.transitioned':
+            _t('Статус заказа изменён', 'Sargydyň ýagdaýy üýtgedi'),
+        'order.request.rejected':
+            _t('Действие с заказом отклонено', 'Sargyt hereketi ret edildi'),
+        'cash_handoff.submitted':
+            _t('Деньги смены переданы', 'Çalşygyň puly tabşyryldy'),
+        'cash_handoff.confirmed':
+            _t('Деньги смены подтверждены', 'Çalşygyň puly tassyklandy'),
+        'order.historical-cash-reconciled': _t(
+          'Отмечена ранее сданная оплата',
+          'Öň tabşyrylan töleg bellenildi',
+        ),
+        'order.historical-completion-requested': _t(
+          'Историческое завершение по поручению владельца',
+          'Eýesiniň tabşyrygy boýunça taryhy tamamlama',
+        ),
+      };
 
   static String auditAction(String? action) =>
-      auditActions[action] ?? 'Изменение записи';
+      auditActions[action] ?? _t('Изменение записи', 'Ýazgynyň üýtgemegi');
 
   static bool isKnownAction(String? action) =>
       action != null && auditActions.containsKey(action);
 
-  static const Map<String, String> entities = {
-    'ORDER': 'Заказ',
-    'CASH_HANDOFF': 'Денежный пакет',
-    'PRODUCT': 'Блюдо',
-    'CATEGORY': 'Категория',
-    'BRANCH': 'Филиал',
-    'PROMO_CODE': 'Промокод',
-    'BANNER': 'Баннер',
-    'CONTACT': 'Контакт',
-    'USER': 'Сотрудник',
-    'STAFF': 'Сотрудник',
-    'SCHEDULE': 'Расписание',
-    'SETTINGS': 'Настройки',
-    'STOCK': 'Склад',
-    'TARIFF': 'Тариф',
-  };
+  static Map<String, String> get entities => {
+        'ORDER': _t('Заказ', 'Sargyt'),
+        'CASH_HANDOFF': _t('Денежный пакет', 'Pul bukjasy'),
+        'PRODUCT': _t('Блюдо', 'Tagam'),
+        'CATEGORY': _t('Категория', 'Kategoriýa'),
+        'BRANCH': _t('Филиал', 'Şahamça'),
+        'PROMO_CODE': _t('Промокод', 'Promokod'),
+        'BANNER': _t('Баннер', 'Banner'),
+        'CONTACT': _t('Контакт', 'Habarlaşmak'),
+        'USER': _t('Сотрудник', 'Işgär'),
+        'STAFF': _t('Сотрудник', 'Işgär'),
+        'SCHEDULE': _t('Расписание', 'Tertip'),
+        'SETTINGS': _t('Настройки', 'Sazlamalar'),
+        'STOCK': _t('Склад', 'Ammar'),
+        'TARIFF': _t('Тариф', 'Nyrh'),
+      };
 
   static String entity(String? type) =>
       entities[(type ?? '').toUpperCase()] ?? (type ?? kDash);
 
   /// Field names inside a before/after comparison. Unknown keys keep their
   /// raw name so nothing is silently dropped.
-  static const Map<String, String> fields = {
-    'status': 'Статус',
-    'total': 'Итого',
-    'subtotal': 'Сумма позиций',
-    'discount': 'Скидка',
-    'foodAmount': 'Сумма еды',
-    'deliveryFee': 'Доставка',
-    'address': 'Адрес',
-    'entrance': 'Подъезд',
-    'floor': 'Этаж',
-    'apartment': 'Квартира',
-    'items': 'Состав',
-    'courierId': 'Курьер',
-    'cookId': 'Повар',
-    'cancelReason': 'Причина отмены',
-    'cancellationReason': 'Причина отмены',
-    'note': 'Комментарий',
-    'customerName': 'Клиент',
-    'customerPhone': 'Телефон',
-    'customerNote': 'Пожелание клиента',
-    'branchName': 'Кухня',
-    'branchId': 'Кухня',
-    'deliveryEtrapName': 'Район',
-    'preparationMinutes': 'Время приготовления',
-    'name': 'Название',
-    'price': 'Цена',
-    'isActive': 'Активно',
-    'declaredAmount': 'Заявленная сумма',
-    'expectedAmount': 'Ожидаемая сумма',
-  };
+  static Map<String, String> get fields => {
+        'status': _t('Статус', 'Ýagdaý'),
+        'total': _t('Итого', 'Jemi'),
+        'subtotal': _t('Сумма позиций', 'Harytlaryň möçberi'),
+        'discount': _t('Скидка', 'Arzanladyş'),
+        'foodAmount': _t('Сумма еды', 'Nahar möçberi'),
+        'deliveryFee': _t('Доставка', 'Eltip berme'),
+        'address': _t('Адрес', 'Salgy'),
+        'entrance': _t('Подъезд', 'Girelge'),
+        'floor': _t('Этаж', 'Gat'),
+        'apartment': _t('Квартира', 'Kwartira'),
+        'items': _t('Состав', 'Düzümi'),
+        'courierId': _t('Курьер', 'Kurýer'),
+        'cookId': _t('Повар', 'Aşpez'),
+        'cancelReason': _t('Причина отмены', 'Ýatyrylyş sebäbi'),
+        'cancellationReason': _t('Причина отмены', 'Ýatyrylyş sebäbi'),
+        'note': _t('Комментарий', 'Bellik'),
+        'customerName': _t('Клиент', 'Müşderi'),
+        'customerPhone': _t('Телефон', 'Telefon'),
+        'customerNote': _t('Пожелание клиента', 'Müşderiniň islegi'),
+        'branchName': _t('Кухня', 'Aşhana'),
+        'branchId': _t('Кухня', 'Aşhana'),
+        'deliveryEtrapName': _t('Район', 'Etrap'),
+        'preparationMinutes':
+            _t('Время приготовления', 'Taýýarlanyş wagty'),
+        'name': _t('Название', 'Ady'),
+        'price': _t('Цена', 'Bahasy'),
+        'isActive': _t('Активно', 'Işjeň'),
+        'declaredAmount': _t('Заявленная сумма', 'Yglan edilen möçber'),
+        'expectedAmount': _t('Ожидаемая сумма', 'Garaşylýan möçber'),
+      };
 
   static String field(String key) => fields[key] ?? key;
 
-  static const Map<String, String> orderStatuses = {
-    'NEW': 'Новый',
-    'PENDING': 'Ожидает',
-    'ACCEPTED': 'Принят',
-    'COOKING': 'Готовится',
-    'READY': 'Готов',
-    'ASSIGNED_TO_COURIER': 'Назначен курьеру',
-    'OUT_FOR_DELIVERY': 'В доставке',
-    'DELIVERED': 'Доставлен',
-    'CASH_RETURNED': 'Деньги возвращены',
-    'RECONCILED': 'Сверен',
-    'CANCELLED': 'Отменён',
-  };
+  static Map<String, String> get orderStatuses => {
+        'NEW': _t('Новый', 'Täze'),
+        'PENDING': _t('Ожидает', 'Garaşýar'),
+        'ACCEPTED': _t('Принят', 'Kabul edildi'),
+        'COOKING': _t('Готовится', 'Taýýarlanýar'),
+        'READY': _t('Готов', 'Taýýar'),
+        'ASSIGNED_TO_COURIER': _t('Назначен курьеру', 'Kurýere berildi'),
+        'OUT_FOR_DELIVERY': _t('В доставке', 'Ýolda'),
+        'DELIVERED': _t('Доставлен', 'Eltildi'),
+        'CASH_RETURNED': _t('Деньги возвращены', 'Pul gaýtaryldy'),
+        'RECONCILED': _t('Сверен', 'Deňeşdirilen'),
+        'CANCELLED': _t('Отменён', 'Ýatyryldy'),
+      };
 
   static String orderStatus(String? status) =>
       orderStatuses[(status ?? '').toUpperCase()] ?? (status ?? kDash);
@@ -119,16 +138,16 @@ class Labels {
         _ => kMutedColor,
       };
 
-  static const Map<String, String> handoffStatuses = {
-    'SUBMITTED': 'Передан, ждёт подтверждения',
-    'CONFIRMED': 'Подтверждён',
-    'PENDING': 'Не передан',
-    'REJECTED': 'Отклонён',
-  };
+  static Map<String, String> get handoffStatuses => {
+        'SUBMITTED': _t('Ждёт подтверждения', 'Tassyklanmaga garaşýar'),
+        'CONFIRMED': _t('Подтверждён', 'Tassyklandy'),
+        'PENDING': _t('Не передан', 'Tabşyrylmadyk'),
+        'REJECTED': _t('Отклонён', 'Ret edildi'),
+      };
 
   static String handoffStatus(String? status) =>
       handoffStatuses[(status ?? '').toUpperCase()] ??
-      (status ?? 'Пакет не создан');
+      (status ?? S.packetNotCreated);
 
   static Color handoffStatusColor(String? status) =>
       switch ((status ?? '').toUpperCase()) {
@@ -142,7 +161,8 @@ class Labels {
   /// the API assembles from the stored events.
   static String participantAction(String action) {
     if (action.startsWith('transition:')) {
-      return 'Статус → ${orderStatus(action.substring('transition:'.length))}';
+      final status = orderStatus(action.substring('transition:'.length));
+      return _t('Статус → $status', 'Ýagdaý → $status');
     }
     return auditActions[action] ?? action;
   }
@@ -151,16 +171,16 @@ class Labels {
   /// names and times come from `GET /accounting/settings`; 09:30/19:00 is
   /// never baked into the app.
   static String shiftSlot(String slot) => switch (slot) {
-        'first' => 'Первая смена',
-        'second' => 'Вторая смена',
-        _ => 'Смена',
+        'first' => S.firstShift,
+        'second' => S.secondShift,
+        _ => S.shift,
       };
 
-  /// The source an order came from.
-  static String orderSource(String? source) => switch ((source ?? '').toUpperCase()) {
-        'APP' || 'MOBILE' => 'Приложение',
-        'STAFF' || 'CALL' || 'PHONE' => 'По телефону',
-        'WEB' => 'Сайт',
+  static String orderSource(String? source) =>
+      switch ((source ?? '').toUpperCase()) {
+        'APP' || 'MOBILE' => _t('Приложение', 'Programma'),
+        'STAFF' || 'CALL' || 'PHONE' => _t('По телефону', 'Telefon arkaly'),
+        'WEB' => _t('Сайт', 'Saýt'),
         _ => source == null || source.isEmpty ? kUnknown : source,
       };
 

@@ -1,19 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:get_storage/get_storage.dart';
-import 'package:intl/date_symbol_data_local.dart';
 
 import 'app/constants/constants.dart';
 import 'app/data/app_state.dart';
 import 'app/modules/auth/login_page.dart';
 import 'app/modules/home/views/main_page.dart';
-import 'app/widgets/month_bar.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await GetStorage.init();
-  // Months, days and times are printed in Russian; the data itself is always
-  // Ashgabat time, whatever the phone is set to.
-  await initializeDateFormatting(kLocale);
 
   runApp(const AccountingApp());
 }
@@ -23,16 +18,21 @@ class AccountingApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: appName,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: kPrimaryColor),
-        fontFamily: gilroyRegular,
-        scaffoldBackgroundColor: kSurfaceColor,
-        useMaterial3: true,
+    // Month and day names are carried by the app itself rather than by the
+    // intl locale database, so switching language needs no extra loading.
+    return AnimatedBuilder(
+      animation: App.instance.language,
+      builder: (context, _) => MaterialApp(
+        debugShowCheckedModeBanner: false,
+        title: appName,
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(seedColor: kPrimaryColor),
+          fontFamily: gilroyRegular,
+          scaffoldBackgroundColor: kSurfaceColor,
+          useMaterial3: true,
+        ),
+        home: const _Root(),
       ),
-      home: const _Root(),
     );
   }
 }

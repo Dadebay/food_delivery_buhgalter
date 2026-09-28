@@ -7,9 +7,11 @@ import '../../data/app_state.dart';
 import '../../data/ashgabat_time.dart';
 import '../../data/formatting.dart';
 import '../../data/models/overview.dart';
+import '../../data/strings.dart';
+import '../../widgets/language_action.dart';
+import '../../widgets/month_picker.dart';
 import '../../widgets/async_loader.dart';
 import '../../widgets/daily_charts.dart';
-import '../../widgets/month_bar.dart';
 import '../../widgets/ui.dart';
 import '../orders/orders_page.dart';
 
@@ -25,10 +27,11 @@ class MonthPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final period = App.instance.period;
     return AnimatedBuilder(
-      animation: period,
+      animation: Listenable.merge([period, App.instance.language]),
       builder: (context, _) => AppScaffold(
-        title: 'Графики',
-        subtitle: 'Спрос, деньги и причины отмен',
+        title: S.charts,
+        subtitle: Ashgabat.monthLabel(period.month),
+        actions: const [MonthAction(), LanguageAction(), SizedBox(width: 4)],
         child: AsyncLoader<MonthBundle>(
           requestKey: '${period.fromDate}:${period.toDate}',
           request: () => App.instance.accounting
@@ -56,80 +59,78 @@ class MonthPage extends StatelessWidget {
     final report = bundle.report.summary;
     final discrepancy = report.handoffDiscrepancy;
     return [
-      const MonthBar(),
-
-      const SectionTitle('Заказы и отмены', icon: AppIcons.orders),
+      SectionTitle(S.ordersAndCancels, icon: AppIcons.orders),
       StatGrid(tiles: [
         StatTile(
-          label: 'Создано заказов',
+          label: S.createdOrders,
           value: Fmt.count(overview.createdOrders),
           icon: AppIcons.orders,
           color: kPrimaryColor,
         ),
         StatTile(
-          label: 'Отменено сейчас',
+          label: S.cancelledNow,
           value: Fmt.count(overview.cancelledOrders),
           icon: AppIcons.cancelled,
           color: kNegativeColor,
-          hint: 'состояние заказов, созданных в периоде',
+          hint: S.cancelledNowHint,
         ),
         StatTile(
-          label: 'Доля отмен',
+          label: S.cancelShare,
           value: Fmt.percent(overview.cancellationRate),
           icon: AppIcons.districts,
         ),
         StatTile(
-          label: 'Действий отмены',
+          label: S.cancelEvents,
           value: Fmt.count(overview.cancellationEvents),
           icon: AppIcons.cancelled,
-          hint: 'переходы в отмену в течение периода',
+          hint: S.cancelEventsHint,
         ),
         StatTile(
-          label: 'Редактирований',
+          label: S.editEvents,
           value: Fmt.count(overview.editEvents),
           icon: AppIcons.edited,
-          hint: 'в том числе заказов прошлых смен',
+          hint: S.editEventsHint,
         ),
         StatTile(
-          label: 'Сумма еды',
+          label: S.foodAmount,
           value: Fmt.money(overview.foodAmount),
           icon: AppIcons.dish,
         ),
       ]),
 
-      const SectionTitle('Деньги', icon: AppIcons.money),
+      SectionTitle(S.money, icon: AppIcons.money),
       StatGrid(tiles: [
         StatTile(
-          label: 'Получено',
+          label: S.received,
           value: Fmt.money(report.collectedAmount),
           icon: AppIcons.collected,
           color: kPositiveColor,
         ),
         StatTile(
-          label: 'Передано',
+          label: S.handedOver,
           value: Fmt.money(report.submittedAmount),
           icon: AppIcons.submitted,
         ),
         StatTile(
-          label: 'Подтверждено',
+          label: S.confirmedMoney,
           value: Fmt.money(report.confirmedAmount),
           icon: AppIcons.confirmed,
           color: kPositiveColor,
         ),
         StatTile(
-          label: 'Ещё не передано',
+          label: S.outstanding,
           value: Fmt.money(report.outstandingAmount),
           icon: AppIcons.outstanding,
           color: kWarningColor,
         ),
         StatTile(
-          label: 'Заявлено пакетами',
+          label: S.declaredByPackets,
           value: Fmt.money(report.declaredHandoffAmount),
           icon: AppIcons.handoff,
-          hint: 'пакеты смен, начавшихся в периоде',
+          hint: S.declaredByPacketsHint,
         ),
         StatTile(
-          label: 'Расхождение',
+          label: S.discrepancy,
           value: Fmt.signedMoney(discrepancy),
           icon: AppIcons.warning,
           color: discrepancy == null
@@ -139,16 +140,11 @@ class MonthPage extends StatelessWidget {
                   : discrepancy > 0
                       ? kWarningColor
                       : kPositiveColor,
-          hint: 'заявлено минус ожидаемое',
+          hint: S.discrepancyHint,
         ),
       ]),
       const SizedBox(height: 10),
-      const NoticeBox(
-        'Расхождение — это не комиссия за систему и не доказательство '
-        'фактического пересчёта купюр. Детали и комментарии остаются в '
-        'пакетах смен.',
-        color: kPrimaryColor,
-      ),
+      NoticeBox(S.discrepancyNote, color: kPrimaryColor),
 
       const SizedBox(height: 22),
       DailyOrdersChart(
@@ -162,31 +158,29 @@ class MonthPage extends StatelessWidget {
       ),
 
       if (bundle.overview.districts.isNotEmpty) ...[
-        const SectionTitle('Районы', icon: AppIcons.address),
+        SectionTitle(S.districts, icon: AppIcons.address),
         _NamedList(rows: bundle.overview.districts),
       ],
       if (bundle.overview.branches.isNotEmpty) ...[
-        const SectionTitle('Кухни', icon: AppIcons.branch),
+        SectionTitle(S.kitchens, icon: AppIcons.branch),
         _NamedList(rows: bundle.overview.branches),
       ],
       if (bundle.overview.cancellationReasons.isNotEmpty) ...[
-        const SectionTitle('Причины отмен', icon: AppIcons.cancelled),
+        SectionTitle(S.cancelReasons, icon: AppIcons.cancelled),
         _NamedList(rows: bundle.overview.cancellationReasons),
       ],
 
       if (bundle.overview.mostOrderedProducts.isNotEmpty) ...[
-        const SectionTitle('Часто заказывают', icon: AppIcons.ranking),
+        SectionTitle(S.mostOrdered, icon: AppIcons.ranking),
         _ProductList(rows: bundle.overview.mostOrderedProducts),
       ],
       if (bundle.overview.leastOrderedProducts.isNotEmpty) ...[
-        const SectionTitle('Редко заказывают', icon: AppIcons.ranking),
+        SectionTitle(S.leastOrdered, icon: AppIcons.ranking),
         _ProductList(rows: bundle.overview.leastOrderedProducts),
         const SizedBox(height: 8),
-        const Text(
-          'Популярность считается в порциях, а не в деньгах. Блюда, которых '
-          'никто не заказывал, в «редкие» не попадают; переименованное блюдо '
-          'может стать отдельной исторической строкой.',
-          style: TextStyle(
+        Text(
+          S.demandNote,
+          style: const TextStyle(
             fontFamily: gilroyRegular,
             fontSize: 11.5,
             color: kMutedColor,
@@ -206,10 +200,10 @@ class MonthPage extends StatelessWidget {
         builder: (_) => OrdersPage(
           period: Period.range(date, date),
           basis: basis,
-          title: Ashgabat.dayLabel(day, kLocale),
+          title: Ashgabat.dayLabel(day),
           subtitle: basis == OrderBasis.created
-              ? 'Заказы по времени создания'
-              : 'Деньги, возвращённые в этот день',
+              ? S.ordersByCreation
+              : S.moneyOfShift,
         ),
       ),
     );
