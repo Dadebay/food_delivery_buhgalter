@@ -204,6 +204,19 @@ class AccountingService {
     );
   }
 
+  /// The super-admin marks an order's cash as returned, for a `DELIVERED`
+  /// order the courier's own app never confirmed. This is the same
+  /// `/orders/:id/transition` the courier app uses, not an `/accounting`
+  /// endpoint — the server creates the money record itself from
+  /// `total - deliveryFee`; nothing else is sent in the body. [version] must
+  /// be the order's current version, not its visible number, or the server
+  /// answers with a 409.
+  Future<void> markCashReturned(String orderId, {required int version}) =>
+      _api.patch(
+        'orders/$orderId/transition',
+        body: {'status': 'CASH_RETURNED', 'version': version},
+      );
+
   /// A month, built from the three range calls the spec prescribes. There is
   /// no `/monthly`; the rest of the pages load when their section is opened
   /// rather than being downloaded to build charts.

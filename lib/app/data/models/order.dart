@@ -90,11 +90,17 @@ class OrderDetail {
     this.completedAt,
     this.transitions = const [],
     this.settlement,
+    this.version,
   });
 
   final String id;
   final int? number;
   final String? status;
+
+  /// The order's concurrency version, required by `/orders/:id/transition`.
+  /// Not the visible [number] — sending a stale value is how the server
+  /// answers a 409.
+  final int? version;
   final String? source;
   final DateTime? createdAt;
 
@@ -183,6 +189,7 @@ class OrderDetail {
       completedAt: DateTime.tryParse(map['completedAt'] as String? ?? ''),
       transitions: list('transitions', OrderTransition.fromJson),
       settlement: Settlement.fromJson(map['settlement']),
+      version: asInt(map['version']),
     );
   }
 

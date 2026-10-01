@@ -9,7 +9,8 @@ import '../../data/ashgabat_time.dart';
 import '../../data/formatting.dart';
 import '../../data/labels.dart';
 import '../../data/models/order.dart';
-import '../../widgets/month_bar.dart';
+import '../../data/strings.dart';
+import '../../widgets/filter_sheet.dart';
 import '../../widgets/paged_list.dart';
 import '../../widgets/ui.dart';
 import 'order_detail_page.dart';
@@ -63,10 +64,10 @@ class _OrdersPageState extends State<OrdersPage> {
       child: PagedList<OrderSummary>(
         requestKey: _requestKey,
         storageKey: 'orders-${widget.period.query}',
-        emptyTitle: 'Заказов нет',
+        emptyTitle: S.noOrders,
         emptyMessage: _basis == OrderBasis.created
-            ? 'В выбранном периоде заказы не создавались.'
-            : 'В выбранном периоде деньги не возвращали.',
+            ? S.noOrdersCreated
+            : S.noOrdersCash,
         fetch: (page) => App.instance.accounting.orders(
           period: widget.period,
           basis: _basis,
@@ -115,7 +116,7 @@ class _OrdersPageState extends State<OrdersPage> {
                         isDense: true,
                         filled: true,
                         fillColor: Colors.white,
-                        hintText: 'Номер заказа',
+                        hintText: S.orderNumberHint,
                         hintStyle: const TextStyle(
                           fontFamily: gilroyRegular,
                           fontSize: 14,
@@ -152,9 +153,20 @@ class _OrdersPageState extends State<OrdersPage> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                _StatusButton(
-                  status: _status,
-                  onChanged: (status) => setState(() => _status = status),
+                FilterButton(
+                  compact: _status == null,
+                  active: _status != null,
+                  label: Labels.orderStatus(_status),
+                  onTap: () async {
+                    final choice = await showFilterSheet(
+                      context,
+                      title: S.status,
+                      entries: Labels.orderStatuses,
+                      selected: _status,
+                      noneLabel: S.allStatuses,
+                    );
+                    if (choice != null) setState(() => _status = choice.value);
+                  },
                 ),
               ],
             ),
@@ -162,7 +174,7 @@ class _OrdersPageState extends State<OrdersPage> {
               Padding(
                 padding: const EdgeInsets.only(top: 8),
                 child: Text(
-                  'Поиск по номеру ограничен выбранным периодом.',
+                  S.numberSearchNote,
                   style: const TextStyle(
                     fontFamily: gilroyRegular,
                     fontSize: 11.5,
@@ -198,14 +210,12 @@ class _BasisSwitch extends StatelessWidget {
         child: Row(
           children: [
             _tab(
-              context,
-              label: 'По созданию',
+              label: S.basisCreated,
               value: OrderBasis.created,
               icon: AppIcons.orders,
             ),
             _tab(
-              context,
-              label: 'По возврату денег',
+              label: S.basisCash,
               value: OrderBasis.cashReturned,
               icon: AppIcons.money,
             ),
@@ -213,8 +223,7 @@ class _BasisSwitch extends StatelessWidget {
         ),
       );
 
-  Widget _tab(
-    BuildContext context, {
+  Widget _tab({
     required String label,
     required OrderBasis value,
     required List<List<dynamic>> icon,
@@ -256,86 +265,40 @@ class _BasisSwitch extends StatelessWidget {
   }
 }
 
-class _StatusButton extends StatelessWidget {
-  const _StatusButton({required this.status, required this.onChanged});
-
-  final String? status;
-  final ValueChanged<String?> onChanged;
-
-  @override
-  Widget build(BuildContext context) => Container(
-        height: 44,
-        decoration: BoxDecoration(
-          color: status == null ? Colors.white : kPrimaryColor,
-          border: Border.all(color: kBorderColor),
-          borderRadius: borderRadius10,
-        ),
-        child: PopupMenuButton<String>(
-          tooltip: 'Статус',
-          padding: EdgeInsets.zero,
-          onSelected: (value) => onChanged(value == '' ? null : value),
-          itemBuilder: (context) => [
-            const PopupMenuItem<String>(value: '', child: Text('Все статусы')),
-            for (final entry in Labels.orderStatuses.entries)
-              PopupMenuItem<String>(value: entry.key, child: Text(entry.value)),
-          ],
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                AppIcon(AppIcons.filter,
-                    size: 17,
-                    color: status == null ? kPrimaryColor : Colors.white),
-                if (status != null) ...[
-                  const SizedBox(width: 6),
-                  ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 90),
-                    child: Text(
-                      Labels.orderStatus(status),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontFamily: gilroySemiBold,
-                        fontSize: 12,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ),
-      );
-}
-
-/// One order in a list. Cards rather than a wide table: this is a phone.
+/// One order in a list: number, state, when, who, and the total.
+///
+/// Deliberately four lines. Everything else — composition, participants,
+/// stages, the money record — belongs on the full-screen card, not here,
+/// where a dense block of figures is harder to scan than it is useful.
 class OrderCard extends StatelessWidget {
   const OrderCard({
     super.key,
     required this.order,
     required this.onTap,
     this.showCashReturn = false,
-    this.trailing,
   });
 
   final OrderSummary order;
   final VoidCallback onTap;
+
+  /// On the cash-return listing the date that matters is the return, not the
+  /// creation — and a historically reconciled order has none at all.
   final bool showCashReturn;
-  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
-    final created = Ashgabat.dateTimeLabel(order.createdAt, kLocale);
-    final returned = Ashgabat.dateTimeLabel(order.cashReturnedAt, kLocale);
+    final created = Ashgabat.dateTimeLabel(order.createdAt);
+    final returned = Ashgabat.dateTimeLabel(order.cashReturnedAt);
+    final when = showCashReturn ? returned : created;
+    final customer = (order.customerName ?? '').trim();
+
     return CardBox(
       onTap: onTap,
+      padding: const EdgeInsets.all(14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
                 child: Text(
@@ -353,50 +316,56 @@ class OrderCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          InfoRow(
-            label: 'Создан',
-            value: created ?? kUnknown,
-            icon: AppIcons.day,
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              AppIcon(
+                showCashReturn ? AppIcons.money : AppIcons.day,
+                size: 14,
+                color: when == null ? kWarningColor : kMutedColor,
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  [
+                    when ?? S.dateUnknown,
+                    if (customer.isNotEmpty) customer,
+                  ].join(' · '),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontFamily: gilroyMedium,
+                    fontSize: 12.5,
+                    color: when == null ? kWarningColor : kMutedColor,
+                  ),
+                ),
+              ),
+            ],
           ),
-          if (showCashReturn)
-            InfoRow(
-              label: 'Деньги вернули',
-              // A historically reconciled order has no real hand-over date;
-              // it is said so instead of being given today's.
-              value: returned ?? 'дата неизвестна',
-              valueColor: returned == null ? kWarningColor : kBlackColor,
-              icon: AppIcons.money,
-            ),
-          InfoRow(
-            label: 'Клиент',
-            value: Fmt.text(order.customerName),
-            icon: AppIcons.customer,
+          const Divider(height: 16, color: kBorderColor),
+          Row(
+            children: [
+              Text(
+                S.total,
+                style: const TextStyle(
+                  fontFamily: gilroyRegular,
+                  fontSize: 13,
+                  color: kMutedColor,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                Fmt.money(order.total),
+                style: const TextStyle(
+                  fontFamily: gilroyBold,
+                  fontSize: 15,
+                  color: kBlackColor,
+                ),
+              ),
+              const SizedBox(width: 8),
+              const AppIcon(AppIcons.forward, size: 15, color: kMutedColor),
+            ],
           ),
-          if ((order.branchName ?? '').isNotEmpty)
-            InfoRow(
-              label: 'Кухня',
-              value: order.branchName!,
-              icon: AppIcons.branch,
-            ),
-          if ((order.deliveryEtrapName ?? '').isNotEmpty)
-            InfoRow(
-              label: 'Район',
-              value: order.deliveryEtrapName!,
-              icon: AppIcons.address,
-            ),
-          const Divider(height: 18, color: kBorderColor),
-          InfoRow(label: 'Еда', value: Fmt.money(order.foodAmount)),
-          InfoRow(label: 'Доставка', value: Fmt.money(order.deliveryFee)),
-          InfoRow(
-            label: 'Итого',
-            value: Fmt.money(order.total),
-            strong: true,
-          ),
-          if (trailing != null) ...[
-            const SizedBox(height: 8),
-            trailing!,
-          ],
         ],
       ),
     );

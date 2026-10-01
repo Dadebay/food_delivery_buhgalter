@@ -5,6 +5,7 @@ import '../constants/app_icons.dart';
 import '../constants/constants.dart';
 import '../data/api_client.dart';
 import '../data/auth_service.dart';
+import '../data/strings.dart';
 
 /// Loading, empty and error are three different states, and the spec insists
 /// they stay different: an empty answer is not a failure, and a failure is
@@ -32,14 +33,10 @@ class LoadingView extends StatelessWidget {
 }
 
 class EmptyView extends StatelessWidget {
-  const EmptyView({
-    super.key,
-    this.title = 'Записей нет',
-    this.message = 'За выбранный период сервер ничего не вернул.',
-  });
+  const EmptyView({super.key, this.title, this.message});
 
-  final String title;
-  final String message;
+  final String? title;
+  final String? message;
 
   @override
   Widget build(BuildContext context) => Padding(
@@ -57,7 +54,7 @@ class EmptyView extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              title,
+              title ?? S.noRecords,
               textAlign: TextAlign.center,
               style: const TextStyle(
                 fontFamily: gilroySemiBold,
@@ -67,7 +64,7 @@ class EmptyView extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             Text(
-              message,
+              message ?? S.nothingForPeriod,
               textAlign: TextAlign.center,
               style: const TextStyle(
                 fontFamily: gilroyRegular,
@@ -127,9 +124,9 @@ class ErrorView extends StatelessWidget {
             TextButton.icon(
               onPressed: onRetry,
               icon: const AppIcon(AppIcons.refresh, size: 18),
-              label: const Text(
-                'Повторить',
-                style: TextStyle(fontFamily: gilroySemiBold),
+              label: Text(
+                S.retry,
+                style: const TextStyle(fontFamily: gilroySemiBold),
               ),
             ),
           ],
@@ -142,36 +139,31 @@ class ErrorView extends StatelessWidget {
 /// A failure is never turned into a number. Each documented code says
 /// something different to the person holding the phone.
 String errorTitle(Object error) {
-  if (error is WrongRoleException) return 'Нет доступа';
-  if (error is! ApiException) return 'Не удалось загрузить';
+  if (error is WrongRoleException) return S.errNoAccess;
+  if (error is! ApiException) return S.errLoad;
   return switch (error.failure) {
-    ApiFailure.badRequest => 'Неверный запрос',
-    ApiFailure.unauthorized => 'Сессия истекла',
-    ApiFailure.forbidden => 'Нет доступа',
-    ApiFailure.notFound => 'Запись не найдена',
-    ApiFailure.conflict => 'Данные изменились',
-    ApiFailure.network => 'Нет соединения',
-    ApiFailure.server => 'Ошибка сервера',
+    ApiFailure.badRequest => S.errBadRequest,
+    ApiFailure.unauthorized => S.errSession,
+    ApiFailure.forbidden => S.errNoAccess,
+    ApiFailure.notFound => S.errNotFound,
+    ApiFailure.conflict => S.errConflict,
+    ApiFailure.network => S.errNetwork,
+    ApiFailure.server => S.errServer,
   };
 }
 
 String errorMessage(Object error) {
-  if (error is WrongRoleException) {
-    return 'Журнал открыт бухгалтеру и владельцу. Выданная страница сама по '
-        'себе доступ не открывает.';
-  }
-  if (error is! ApiException) return 'Попробуйте ещё раз.';
+  if (error is WrongRoleException) return S.msgWrongRole;
+  if (error is! ApiException) return S.msgTryAgain;
   final server = error.serverMessage;
   if (server != null && server.trim().isNotEmpty) return server.trim();
   return switch (error.failure) {
-    ApiFailure.badRequest => 'Сервер не принял параметры запроса.',
-    ApiFailure.unauthorized => 'Войдите заново, чтобы продолжить.',
-    ApiFailure.forbidden =>
-      'У этой учётной записи нет права на раздел бухгалтерии.',
-    ApiFailure.notFound => 'Заказ или запись отсутствует.',
-    ApiFailure.conflict =>
-      'Данные успели измениться. Обновите и посмотрите ответ сервера.',
-    ApiFailure.network => 'Проверьте связь и повторите запрос.',
-    ApiFailure.server => 'Сервер не смог ответить. Повторите позже.',
+    ApiFailure.badRequest => S.msgBadRequest,
+    ApiFailure.unauthorized => S.msgSession,
+    ApiFailure.forbidden => S.msgForbidden,
+    ApiFailure.notFound => S.msgNotFound,
+    ApiFailure.conflict => S.msgConflict,
+    ApiFailure.network => S.msgNetwork,
+    ApiFailure.server => S.msgServer,
   };
 }

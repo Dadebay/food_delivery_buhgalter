@@ -20,6 +20,11 @@ extension StaffRoleAccess on StaffRole {
 
   /// Editing the shift schedule is the owner's alone.
   bool get canEditSettings => this == StaffRole.superAdmin;
+
+  /// Marking an order's cash as returned is normally the courier's own
+  /// action; the API also allows an administrator override, which here means
+  /// the owner only — the accountant stays view-only on orders.
+  bool get canReturnCash => this == StaffRole.superAdmin;
 }
 
 StaffRole roleFromApi(String? value) => switch ((value ?? '').toUpperCase()) {

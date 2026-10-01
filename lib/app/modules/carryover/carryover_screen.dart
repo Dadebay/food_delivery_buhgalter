@@ -9,7 +9,7 @@ import '../../data/formatting.dart';
 import '../../data/labels.dart';
 import '../../data/models/carryover.dart';
 import '../../data/models/paged.dart';
-import '../../widgets/month_bar.dart';
+import '../../data/strings.dart';
 import '../../widgets/paged_list.dart';
 import '../../widgets/ui.dart';
 import '../orders/order_detail_page.dart';
@@ -43,16 +43,14 @@ class _CarryoverScreenState extends State<CarryoverScreen> {
 
   @override
   Widget build(BuildContext context) => AppScaffold(
-        title: widget.incoming ? 'Принято от смены' : 'Передано смене',
+        title: widget.incoming ? S.carryIn : S.carryOut,
         subtitle: widget.subtitle,
         child: PagedList<CarryoverEntry>(
           requestKey: '${widget.period.query}|${widget.incoming}',
           storageKey: 'carryover-${widget.period.query}-${widget.incoming}',
-          emptyTitle: 'Переходящих заказов нет',
-          emptyMessage: widget.incoming
-              ? 'На входе периода незавершённых заказов не было.'
-              : 'На выходе периода незавершённых заказов не осталось.',
-          fetch: (page) => _fetch(page),
+          emptyTitle: S.noCarryover,
+          emptyMessage: widget.incoming ? S.noCarryIn : S.noCarryOut,
+          fetch: _fetch,
           header: _header(),
           itemBuilder: (context, entry, _) => _CarryoverCard(entry: entry),
         ),
@@ -81,36 +79,54 @@ class _CarryoverScreenState extends State<CarryoverScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             CardBox(
-              child: Column(
+              padding: const EdgeInsets.all(14),
+              child: Row(
                 children: [
-                  InfoRow(
-                    label: 'Граница',
-                    value: Ashgabat.dateTimeLabel(_boundary, kLocale) ??
-                        kUnknown,
-                    icon: AppIcons.day,
+                  AppIconBadge(
+                    widget.incoming ? AppIcons.carryIn : AppIcons.carryOut,
+                    color: kWarningColor,
+                    size: 38,
                   ),
-                  InfoRow(
-                    label: 'Переходят',
-                    value: 'Готовится, готов, у курьера, в доставке, доставлен',
-                    icon: widget.incoming
-                        ? AppIcons.carryIn
-                        : AppIcons.carryOut,
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          S.boundary,
+                          style: const TextStyle(
+                            fontFamily: gilroyRegular,
+                            fontSize: 12,
+                            color: kMutedColor,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          Ashgabat.dateTimeLabel(_boundary) ?? kUnknown,
+                          style: const TextStyle(
+                            fontFamily: gilroySemiBold,
+                            fontSize: 14,
+                            color: kBlackColor,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
             ),
             if (_provisional) ...[
               const SizedBox(height: 10),
-              const NoticeBox(
-                'Период ещё не завершён: это срез на текущий момент, а не '
-                'окончательная передача.',
-              ),
+              NoticeBox(S.provisionalNote),
             ],
           ],
         ),
       );
 }
 
+/// One carried order: which order, where it stood at the cut, where it
+/// stands now. The snapshot's money is a single line; the rest is on the
+/// order's own screen.
 class _CarryoverCard extends StatelessWidget {
   const _CarryoverCard({required this.entry});
 
@@ -120,7 +136,10 @@ class _CarryoverCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final order = entry.order;
     final snapshot = entry.snapshot;
+    final total = snapshot == null ? null : _amount(snapshot['total']);
+    final items = snapshot?['items'];
     return CardBox(
+      padding: const EdgeInsets.all(14),
       onTap: () => Navigator.of(context).push(
         MaterialPageRoute<void>(
           builder: (_) => OrderDetailPage(orderId: order.id),
@@ -141,69 +160,61 @@ class _CarryoverCard extends StatelessWidget {
                   ),
                 ),
               ),
-              const AppIcon(AppIcons.forward, size: 16, color: kMutedColor),
+              Pill(
+                Labels.orderStatus(entry.statusAtBoundary),
+                color: Labels.orderStatusColor(entry.statusAtBoundary),
+              ),
             ],
           ),
-          const SizedBox(height: 8),
-          InfoRow(
-            label: 'Статус на границе',
-            value: Labels.orderStatus(entry.statusAtBoundary),
-            valueColor: Labels.orderStatusColor(entry.statusAtBoundary),
-          ),
-          InfoRow(
-            label: 'Статус сейчас',
-            value: Labels.orderStatus(order.status),
-            valueColor: Labels.orderStatusColor(order.status),
-          ),
-          InfoRow(
-            label: 'Создан',
-            value: Ashgabat.dateTimeLabel(order.createdAt, kLocale) ?? kUnknown,
-            icon: AppIcons.day,
-          ),
-          const Divider(height: 18, color: kBorderColor),
-          if (!entry.historicalSnapshotAvailable)
-            const NoticeBox(
-              'Снимок на границе не сохранялся — исторический состав и суммы '
-              'этого заказа показать нельзя.',
-            )
-          else if (snapshot != null) ...[
-            const Text(
-              'На границе смены',
-              style: TextStyle(
-                fontFamily: gilroySemiBold,
-                fontSize: 13,
-                color: kBlackColor,
+          const SizedBox(height: 6),
+          // The status now can differ from the status at the cut; saying so
+          // in one line is the whole point of this list.
+          Row(
+            children: [
+              const AppIcon(AppIcons.transition, size: 14, color: kMutedColor),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  '${S.statusNow}: ${Labels.orderStatus(order.status)}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontFamily: gilroyMedium,
+                    fontSize: 12.5,
+                    color: kMutedColor,
+                  ),
+                ),
               ),
-            ),
-            const SizedBox(height: 4),
-            InfoRow(
-              label: 'Сумма еды',
-              value: Fmt.money(_amount(snapshot['foodAmount'])),
-            ),
-            InfoRow(
-              label: 'Итого',
-              value: Fmt.money(_amount(snapshot['total'])),
-            ),
-            InfoRow(
-              label: 'Позиций',
-              value: Fmt.count(
-                  snapshot['items'] is List ? (snapshot['items'] as List).length : null),
-            ),
-            if (snapshot['address'] != null)
-              InfoRow(
-                label: 'Адрес',
-                value: snapshot['address'].toString(),
-                icon: AppIcons.address,
-              ),
-            const SizedBox(height: 6),
-            const Text(
-              'Текущие значения заказа могут отличаться — они показаны в '
-              'карточке заказа.',
-              style: TextStyle(
-                fontFamily: gilroyRegular,
-                fontSize: 11.5,
-                color: kMutedColor,
-              ),
+            ],
+          ),
+          if (!entry.historicalSnapshotAvailable) ...[
+            const SizedBox(height: 10),
+            NoticeBox(S.noSnapshotNote),
+          ] else if (snapshot != null) ...[
+            const Divider(height: 16, color: kBorderColor),
+            Row(
+              children: [
+                Text(
+                  S.atBoundary,
+                  style: const TextStyle(
+                    fontFamily: gilroyRegular,
+                    fontSize: 12.5,
+                    color: kMutedColor,
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  [
+                    Fmt.money(total),
+                    if (items is List) '${items.length} · ${S.itemsCount}',
+                  ].join(' · '),
+                  style: const TextStyle(
+                    fontFamily: gilroySemiBold,
+                    fontSize: 13,
+                    color: kBlackColor,
+                  ),
+                ),
+              ],
             ),
           ],
         ],

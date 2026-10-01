@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
-import '../../constants/app_icons.dart';
 import '../../constants/constants.dart';
 import '../../data/api_client.dart';
 import '../../data/app_state.dart';
 import '../../data/formatting.dart';
 import '../../data/models/shift.dart';
+import '../../data/strings.dart';
 import '../../widgets/state_views.dart';
 import '../../widgets/ui.dart';
 
@@ -44,9 +44,9 @@ Future<void> confirmHandoff(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Подтвердить сумму пакета',
-              style: TextStyle(
+            Text(
+              S.confirmPacketTitle,
+              style: const TextStyle(
                 fontFamily: gilroyBold,
                 fontSize: 19,
                 color: kBlackColor,
@@ -57,16 +57,16 @@ Future<void> confirmHandoff(
               child: Column(
                 children: [
                   InfoRow(
-                    label: 'Ожидаемая сумма',
+                    label: S.expectedAmount,
                     value: Fmt.money(handoff.expectedAmount),
                   ),
                   InfoRow(
-                    label: 'Заявлено',
+                    label: S.declared,
                     value: Fmt.money(handoff.declaredAmount),
                     strong: true,
                   ),
                   InfoRow(
-                    label: 'Расхождение',
+                    label: S.discrepancy,
                     value: Fmt.signedMoney(handoff.discrepancy),
                     valueColor: handoff.discrepancy == null
                         ? kBlackColor
@@ -75,7 +75,7 @@ Future<void> confirmHandoff(
                             : kBlackColor,
                   ),
                   InfoRow(
-                    label: 'Записей',
+                    label: S.records,
                     value: Fmt.count(handoff.settlementCount),
                   ),
                 ],
@@ -88,11 +88,12 @@ Future<void> confirmHandoff(
               maxLines: 3,
               enabled: !busy,
               style: const TextStyle(fontFamily: gilroyMedium, fontSize: 14),
-              decoration: const InputDecoration(
-                labelText: 'Комментарий (необязательно)',
-                labelStyle: TextStyle(
+              decoration: InputDecoration(
+                labelText: S.noteOptional,
+                labelStyle: const TextStyle(
                     fontFamily: gilroyMedium, color: kMutedColor),
-                border: OutlineInputBorder(borderRadius: borderRadius10),
+                border: const OutlineInputBorder(
+                    borderRadius: borderRadius10),
               ),
             ),
             if (error != null) ...[
@@ -133,7 +134,7 @@ Future<void> confirmHandoff(
                           onDone();
                           showSnackBar(
                             context,
-                            'Пакет подтверждён',
+                            S.packetConfirmed,
                             color: kPositiveColor,
                           );
                         } catch (caught) {
@@ -144,9 +145,7 @@ Future<void> confirmHandoff(
                           setSheetState(() {
                             busy = false;
                             error = offline
-                                ? '${errorMessage(caught)} Сначала проверьте '
-                                    'фактическое состояние пакета — операция '
-                                    'могла пройти.'
+                                ? '${errorMessage(caught)} ${S.checkPacketFirst}'
                                 : errorMessage(caught);
                           });
                           // A conflict means the data moved on: re-read it
@@ -163,9 +162,9 @@ Future<void> confirmHandoff(
                           color: Colors.white,
                         ),
                       )
-                    : const Text(
-                        'Подтвердить',
-                        style: TextStyle(
+                    : Text(
+                        S.confirm,
+                        style: const TextStyle(
                           fontFamily: gilroySemiBold,
                           fontSize: 16,
                           color: Colors.white,
@@ -174,10 +173,9 @@ Future<void> confirmHandoff(
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'Подтверждение сохраняется. Заказы переводит в «Сверен» сервер '
-              'для состава этого пакета.',
-              style: TextStyle(
+            Text(
+              S.confirmNote,
+              style: const TextStyle(
                 fontFamily: gilroyRegular,
                 fontSize: 11.5,
                 color: kMutedColor,
@@ -222,9 +220,9 @@ Future<void> createHandoff(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Создать денежный пакет',
-              style: TextStyle(
+            Text(
+              S.createPacketTitle,
+              style: const TextStyle(
                 fontFamily: gilroyBold,
                 fontSize: 19,
                 color: kBlackColor,
@@ -234,9 +232,9 @@ Future<void> createHandoff(
             CardBox(
               child: Column(
                 children: [
-                  InfoRow(label: 'Смена', value: shift.shiftKey),
+                  InfoRow(label: S.shift, value: shift.shiftKey),
                   InfoRow(
-                    label: 'Ожидается к сдаче',
+                    label: S.expected,
                     value: Fmt.money(shift.expectedAmount),
                     strong: true,
                   ),
@@ -250,11 +248,12 @@ Future<void> createHandoff(
                   const TextInputType.numberWithOptions(decimal: true),
               enabled: !busy,
               style: const TextStyle(fontFamily: gilroySemiBold, fontSize: 14),
-              decoration: const InputDecoration(
-                labelText: 'Заявленная сумма (необязательно)',
-                labelStyle: TextStyle(
+              decoration: InputDecoration(
+                labelText: S.declaredOptional,
+                labelStyle: const TextStyle(
                     fontFamily: gilroyMedium, color: kMutedColor),
-                border: OutlineInputBorder(borderRadius: borderRadius10),
+                border: const OutlineInputBorder(
+                    borderRadius: borderRadius10),
               ),
             ),
             const SizedBox(height: 10),
@@ -264,11 +263,12 @@ Future<void> createHandoff(
               maxLines: 2,
               enabled: !busy,
               style: const TextStyle(fontFamily: gilroyMedium, fontSize: 14),
-              decoration: const InputDecoration(
-                labelText: 'Комментарий (необязательно)',
-                labelStyle: TextStyle(
+              decoration: InputDecoration(
+                labelText: S.noteOptional,
+                labelStyle: const TextStyle(
                     fontFamily: gilroyMedium, color: kMutedColor),
-                border: OutlineInputBorder(borderRadius: borderRadius10),
+                border: const OutlineInputBorder(
+                    borderRadius: borderRadius10),
               ),
             ),
             if (error != null) ...[
@@ -309,7 +309,7 @@ Future<void> createHandoff(
                           if (!sheetContext.mounted) return;
                           Navigator.of(sheetContext).pop();
                           onDone();
-                          showSnackBar(context, 'Пакет создан');
+                          showSnackBar(context, S.packetCreated);
                         } catch (caught) {
                           setSheetState(() {
                             busy = false;
@@ -330,9 +330,9 @@ Future<void> createHandoff(
                           color: Colors.white,
                         ),
                       )
-                    : const Text(
-                        'Создать',
-                        style: TextStyle(
+                    : Text(
+                        S.create,
+                        style: const TextStyle(
                           fontFamily: gilroySemiBold,
                           fontSize: 16,
                           color: Colors.white,

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../constants/app_icons.dart';
 import '../constants/constants.dart';
 import '../data/formatting.dart';
+import '../data/strings.dart';
 
 /// The app's page frame: a Hugeicon back button, a title and an optional
 /// subtitle that says which period is on screen.
@@ -36,7 +37,7 @@ class AppScaffold extends StatelessWidget {
             ? IconButton(
                 onPressed: () => Navigator.of(context).maybePop(),
                 icon: const AppIcon(AppIcons.back, color: kBlackColor),
-                tooltip: 'Назад',
+                tooltip: S.back,
               )
             : null,
         title: Column(
@@ -248,8 +249,7 @@ class StatGrid extends StatelessWidget {
   Widget build(BuildContext context) => LayoutBuilder(
         builder: (context, constraints) {
           final columns = constraints.maxWidth < 340 ? 1 : 2;
-          final width =
-              (constraints.maxWidth - (columns - 1) * 10) / columns;
+          final width = (constraints.maxWidth - (columns - 1) * 10) / columns;
           return Wrap(
             spacing: 10,
             runSpacing: 10,
@@ -486,8 +486,7 @@ class NamedCountRow extends StatelessWidget {
                   value: share!.clamp(0, 1),
                   minHeight: 5,
                   backgroundColor: kBorderColor,
-                  valueColor:
-                      const AlwaysStoppedAnimation<Color>(kPrimaryColor),
+                  valueColor: const AlwaysStoppedAnimation<Color>(kPrimaryColor),
                 ),
               ),
             ],
@@ -502,6 +501,295 @@ class NamedCountRow extends StatelessWidget {
                 ),
               ),
             ],
+          ],
+        ),
+      );
+}
+
+/// One segment of [SegmentedTabBar].
+class SegmentTab {
+  const SegmentTab(this.label, {this.icon});
+
+  final String label;
+  final List<List<dynamic>>? icon;
+}
+
+/// A segmented control used as an app bar's tabs.
+///
+/// The segments share the width equally and never scroll sideways: on these
+/// screens a tab that has to be swiped into view is a tab nobody presses. A
+/// label too long for its share is scaled down rather than clipped, so the
+/// Russian and the Turkmen wording both fit the same bar.
+class SegmentedTabBar extends StatelessWidget implements PreferredSizeWidget {
+  const SegmentedTabBar({super.key, required this.tabs, this.controller});
+
+  final List<SegmentTab> tabs;
+  final TabController? controller;
+
+  @override
+  Size get preferredSize => const Size.fromHeight(56);
+
+  @override
+  Widget build(BuildContext context) => Container(
+        height: 46,
+        margin: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+        padding: const EdgeInsets.all(4),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border.all(color: kBorderColor),
+          borderRadius: borderRadius30,
+        ),
+        child: TabBar(
+          controller: controller,
+          isScrollable: false,
+          padding: EdgeInsets.zero,
+          labelPadding: const EdgeInsets.symmetric(horizontal: 4),
+          indicator: const BoxDecoration(
+            color: kPrimaryColor,
+            borderRadius: borderRadius30,
+          ),
+          indicatorSize: TabBarIndicatorSize.tab,
+          dividerColor: Colors.transparent,
+          splashBorderRadius: borderRadius30,
+          overlayColor: WidgetStateProperty.all(Colors.transparent),
+          labelColor: Colors.white,
+          unselectedLabelColor: kMutedColor,
+          labelStyle: const TextStyle(
+            fontFamily: gilroySemiBold,
+            fontSize: 13,
+          ),
+          unselectedLabelStyle: const TextStyle(
+            fontFamily: gilroyMedium,
+            fontSize: 13,
+          ),
+          tabs: [
+            for (final tab in tabs)
+              Tab(
+                height: 38,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (tab.icon != null) ...[
+                        _SegmentIcon(tab.icon!),
+                        const SizedBox(width: 6),
+                      ],
+                      Text(tab.label),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        ),
+      );
+}
+
+/// The icon inside a segment, tinted by whether that segment is selected —
+/// [TabBar] colours the text for us but not a Hugeicon.
+class _SegmentIcon extends StatelessWidget {
+  const _SegmentIcon(this.icon);
+
+  final List<List<dynamic>> icon;
+
+  @override
+  Widget build(BuildContext context) => AppIcon(
+        icon,
+        size: 16,
+        color: IconTheme.of(context).color ??
+            DefaultTextStyle.of(context).style.color ??
+            kMutedColor,
+      );
+}
+
+/// A full-width button that opens the rest of a list that was cut short.
+///
+/// Cutting a list silently hides data the accountant came for, so the count
+/// of what is still folded away is part of the label.
+class ShowMoreButton extends StatelessWidget {
+  const ShowMoreButton({
+    super.key,
+    required this.expanded,
+    required this.label,
+    required this.onPressed,
+  });
+
+  final bool expanded;
+  final String label;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+        width: double.infinity,
+        height: 44,
+        child: OutlinedButton.icon(
+          style: OutlinedButton.styleFrom(
+            backgroundColor: Colors.white,
+            side: const BorderSide(color: kBorderColor),
+            shape: const RoundedRectangleBorder(borderRadius: borderRadius15),
+          ),
+          onPressed: onPressed,
+          icon: AppIcon(
+            expanded ? AppIcons.collapse : AppIcons.expand,
+            size: 17,
+          ),
+          label: Text(
+            label,
+            style: const TextStyle(
+              fontFamily: gilroySemiBold,
+              fontSize: 13.5,
+              color: kPrimaryColor,
+            ),
+          ),
+        ),
+      );
+}
+
+/// A dashed rule, the way a paper receipt separates its blocks.
+class DashedLine extends StatelessWidget {
+  const DashedLine({super.key, this.color = kBorderColor});
+
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+        height: 1,
+        width: double.infinity,
+        child: CustomPaint(painter: _DashedLinePainter(color)),
+      );
+}
+
+class _DashedLinePainter extends CustomPainter {
+  const _DashedLinePainter(this.color);
+
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 1;
+    const dash = 4.0;
+    const gap = 4.0;
+    for (var x = 0.0; x < size.width; x += dash + gap) {
+      canvas.drawLine(
+        Offset(x, 0),
+        Offset(x + dash > size.width ? size.width : x + dash, 0),
+        paint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(_DashedLinePainter old) => old.color != color;
+}
+
+/// A slip of paper: a white block whose top and bottom edges are torn into
+/// the scallops a printed receipt has.
+///
+/// It is the order's own money made to look like what the courier hands
+/// over, so the figures on it are read as one document rather than as four
+/// more rows of the same table.
+class ReceiptPaper extends StatelessWidget {
+  const ReceiptPaper({
+    super.key,
+    required this.child,
+    this.padding = const EdgeInsets.fromLTRB(18, 22, 18, 22),
+  });
+
+  final Widget child;
+  final EdgeInsets padding;
+
+  @override
+  Widget build(BuildContext context) => ClipPath(
+        clipper: const _ScallopClipper(),
+        child: Container(
+          width: double.infinity,
+          color: Colors.white,
+          padding: padding,
+          child: child,
+        ),
+      );
+}
+
+class _ScallopClipper extends CustomClipper<Path> {
+  const _ScallopClipper();
+
+  /// How deep each bite out of the edge is. Small enough that the block
+  /// still reads as a card, large enough to read as torn paper.
+  static const double radius = 6;
+
+  @override
+  Path getClip(Size size) {
+    final path = Path();
+    const step = radius * 2;
+    // Top edge, left to right, biting a half-circle out of the paper for
+    // every step so the block reads as torn rather than cut.
+    path.moveTo(0, radius);
+    for (var x = 0.0; x < size.width; x += step) {
+      path.arcToPoint(
+        Offset(x + step, radius),
+        radius: const Radius.circular(radius),
+        clockwise: true,
+      );
+    }
+    path.lineTo(size.width, size.height - radius);
+    for (var x = size.width; x > 0; x -= step) {
+      path.arcToPoint(
+        Offset(x - step, size.height - radius),
+        radius: const Radius.circular(radius),
+        clockwise: true,
+      );
+    }
+    path.close();
+    return path;
+  }
+
+  @override
+  bool shouldReclip(_ScallopClipper old) => false;
+}
+
+/// A line on the receipt: a caption on the left and a figure on the right,
+/// with the total set larger than the rows that add up to it.
+class ReceiptRow extends StatelessWidget {
+  const ReceiptRow({
+    super.key,
+    required this.label,
+    required this.value,
+    this.total = false,
+    this.color,
+  });
+
+  final String label;
+  final String value;
+  final bool total;
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: EdgeInsets.symmetric(vertical: total ? 2 : 5),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontFamily: total ? gilroySemiBold : gilroyRegular,
+                  fontSize: total ? 15 : 13,
+                  color: total ? kBlackColor : kMutedColor,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              value,
+              style: TextStyle(
+                fontFamily: total ? gilroyBold : gilroySemiBold,
+                fontSize: total ? 19 : 13,
+                color: color ?? kBlackColor,
+              ),
+            ),
           ],
         ),
       );

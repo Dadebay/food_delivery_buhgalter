@@ -8,7 +8,7 @@ import '../../data/ashgabat_time.dart';
 import '../../data/formatting.dart';
 import '../../data/labels.dart';
 import '../../data/models/audit.dart';
-import '../../widgets/month_bar.dart';
+import '../../data/strings.dart';
 import '../../widgets/ui.dart';
 
 /// One line of «Кто что сделал».
@@ -31,7 +31,7 @@ class AuditTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final when = Ashgabat.dateTimeLabel(entry.createdAt, kLocale);
+    final when = Ashgabat.dateTimeLabel(entry.createdAt);
     final actor = entry.actor?.fullName;
     return CardBox(
       onTap: () => showAuditDetails(context, entry, onOpenOrder: onOpenOrder),
@@ -71,11 +71,14 @@ class AuditTile extends StatelessWidget {
                             ),
                           ),
                         Text(
-                          actor ?? kUnknown,
-                          style: const TextStyle(
-                            fontFamily: gilroyMedium,
+                          // A rejected request often has no author saved at
+                          // all; saying so beats a bare "unknown" that reads
+                          // like a missing name.
+                          actor ?? S.authorNotRecorded,
+                          style: TextStyle(
+                            fontFamily: actor == null ? gilroyRegular : gilroyMedium,
                             fontSize: 12.5,
-                            color: kBlackColor,
+                            color: actor == null ? kMutedColor : kBlackColor,
                           ),
                         ),
                         Text(
@@ -97,7 +100,7 @@ class AuditTile extends StatelessWidget {
           if (entry.hasComparison) ...[
             const SizedBox(height: 8),
             Text(
-              'Изменено: ${entry.changedFields.map(Labels.field).join(', ')}',
+              S.changedFields(entry.changedFields.map(Labels.field).join(', ')),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
@@ -108,12 +111,21 @@ class AuditTile extends StatelessWidget {
             ),
           ] else if (!Labels.isKnownAction(entry.action)) ...[
             const SizedBox(height: 8),
-            Text(
-              'Событие: ${entry.action ?? kUnknown}',
-              style: const TextStyle(
-                fontFamily: gilroyRegular,
-                fontSize: 12,
-                color: kMutedColor,
+            // The raw event code, kept visible but clearly technical, so an
+            // action this build does not know is never silently dropped.
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: kSurfaceColor,
+                borderRadius: borderRadius10,
+              ),
+              child: Text(
+                entry.action ?? kUnknown,
+                style: const TextStyle(
+                  fontFamily: 'monospace',
+                  fontSize: 11,
+                  color: kMutedColor,
+                ),
               ),
             ),
           ],
@@ -193,23 +205,22 @@ class _AuditDetails extends StatelessWidget {
             children: [
               if (entry.orderNumber != null)
                 InfoRow(
-                  label: 'Заказ',
+                  label: S.order,
                   value: Fmt.orderNumber(entry.orderNumber),
                   icon: AppIcons.orders,
                 ),
               InfoRow(
-                label: 'Сотрудник',
-                value: entry.actor?.fullName ?? kUnknown,
+                label: S.staff,
+                value: entry.actor?.fullName ?? S.authorNotRecorded,
                 icon: AppIcons.person,
               ),
               InfoRow(
-                label: 'Время',
-                value: Ashgabat.dateTimeLabel(entry.createdAt, kLocale) ??
-                    kUnknown,
+                label: S.time,
+                value: Ashgabat.dateTimeLabel(entry.createdAt) ?? kUnknown,
                 icon: AppIcons.day,
               ),
               InfoRow(
-                label: 'Раздел',
+                label: S.section,
                 value: Labels.entity(entry.entityType),
                 icon: AppIcons.details,
               ),
@@ -223,31 +234,25 @@ class _AuditDetails extends StatelessWidget {
             child: FilledButton.icon(
               style: FilledButton.styleFrom(
                 backgroundColor: kPrimaryColor,
-                shape:
-                    const RoundedRectangleBorder(borderRadius: borderRadius15),
+                shape: const RoundedRectangleBorder(borderRadius: borderRadius15),
               ),
               onPressed: () {
                 Navigator.of(context).pop();
                 onOpenOrder!(orderId);
               },
-              icon: const AppIcon(AppIcons.orders,
-                  size: 18, color: Colors.white),
-              label: const Text(
-                'Открыть заказ',
-                style: TextStyle(
-                    fontFamily: gilroySemiBold, color: Colors.white),
+              icon: const AppIcon(AppIcons.orders, size: 18, color: Colors.white),
+              label: Text(
+                S.openOrder,
+                style: const TextStyle(fontFamily: gilroySemiBold, color: Colors.white),
               ),
             ),
           ),
         ],
         if (!entry.hasComparison) ...[
           const SizedBox(height: 14),
-          const NoticeBox(
-            'Для этого события сохранённого сравнения нет. Старые записи без '
-            'снимка восстановить задним числом нельзя.',
-          ),
+          NoticeBox(S.noComparison),
         ] else ...[
-          const SectionTitle('Что изменилось', icon: AppIcons.edited),
+          SectionTitle(S.whatChanged, icon: AppIcons.edited),
           for (final field in fields)
             if (field == 'items')
               _ItemsComparison(entry: entry)
@@ -259,7 +264,7 @@ class _AuditDetails extends StatelessWidget {
               ),
         ],
         if (entry.relatedActors.isNotEmpty) ...[
-          const SectionTitle('Участники записи', icon: AppIcons.person),
+          SectionTitle(S.recordParticipants, icon: AppIcons.person),
           CardBox(
             child: Column(
               children: [
@@ -267,7 +272,7 @@ class _AuditDetails extends StatelessWidget {
                   InfoRow(
                     // The role is whatever the account says now, not what it
                     // said when the action happened.
-                    label: actor.role ?? 'Сотрудник',
+                    label: Labels.role(actor.role),
                     value: actor.fullName ?? kUnknown,
                     icon: AppIcons.person,
                   ),
@@ -284,10 +289,13 @@ class _AuditDetails extends StatelessWidget {
   /// A saved value in the words the screen uses. Ids become names where the
   /// log carried them; everything else keeps its own shape.
   static String _render(AuditEntry entry, String field, dynamic value) {
-    if (value == null) return 'пусто';
+    if (value == null) return S.empty;
     switch (field) {
       case 'status':
         return Labels.orderStatus(value.toString());
+      case 'cancelReason':
+      case 'cancellationReason':
+        return Labels.cancelReason(value.toString());
       case 'total':
       case 'subtotal':
       case 'discount':
@@ -304,7 +312,7 @@ class _AuditDetails extends StatelessWidget {
       case 'actorId':
         return entry.actorName(value.toString()) ?? value.toString();
       default:
-        if (value is bool) return value ? 'Да' : 'Нет';
+        if (value is bool) return value ? S.yes : S.no;
         if (value is Map || value is List) {
           return const JsonEncoder.withIndent('  ').convert(value);
         }
@@ -341,13 +349,13 @@ class _FieldComparison extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               _Side(
-                title: 'До изменения',
+                title: S.beforeChange,
                 value: before,
                 color: kNegativeColor,
               ),
               const SizedBox(height: 6),
               _Side(
-                title: 'После изменения',
+                title: S.afterChange,
                 value: after,
                 color: kPositiveColor,
               ),
@@ -420,9 +428,9 @@ class _ItemsComparison extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Состав',
-              style: TextStyle(
+            Text(
+              Labels.field('items'),
+              style: const TextStyle(
                 fontFamily: gilroySemiBold,
                 fontSize: 14,
                 color: kBlackColor,
@@ -441,11 +449,11 @@ class _ItemsComparison extends StatelessWidget {
                             ? kMutedColor
                             : kWarningColor;
                 final text = was == null
-                    ? 'добавлено × ${now ?? 0}'
+                    ? '${S.changedItemAdded} × ${now ?? 0}'
                     : now == null
-                        ? 'убрано (было × $was)'
+                        ? S.itemRemoved('$was')
                         : was == now
-                            ? '× $now, без изменений'
+                            ? S.itemUnchanged('$now')
                             : '× $was → × $now';
                 return Padding(
                   padding: const EdgeInsets.symmetric(vertical: 5),
@@ -513,9 +521,9 @@ class _TechnicalDetails extends StatelessWidget {
         child: ExpansionTile(
           tilePadding: EdgeInsets.zero,
           childrenPadding: EdgeInsets.zero,
-          title: const Text(
-            'Технические детали',
-            style: TextStyle(
+          title: Text(
+            S.technicalDetails,
+            style: const TextStyle(
               fontFamily: gilroySemiBold,
               fontSize: 13.5,
               color: kMutedColor,
@@ -543,8 +551,7 @@ class _TechnicalDetails extends StatelessWidget {
                   if (entry.metadata != null) ...[
                     const SizedBox(height: 10),
                     SelectableText(
-                      const JsonEncoder.withIndent('  ')
-                          .convert(entry.metadata),
+                      const JsonEncoder.withIndent('  ').convert(entry.metadata),
                       style: const TextStyle(
                         fontFamily: 'monospace',
                         fontSize: 11.5,
