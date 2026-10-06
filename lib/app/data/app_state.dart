@@ -6,13 +6,10 @@ import 'api_client.dart';
 import 'ashgabat_time.dart';
 import 'auth_service.dart';
 import 'language.dart';
-import 'models/shift.dart';
 
 /// The single place the screens reach for the API.
 ///
-/// Small on purpose: one client, one session, one accounting service. The
-/// shift settings are cached here because every screen that prints a shift
-/// name needs them and they change about once a year.
+/// Small on purpose: one client, one session, one accounting service.
 class App {
   App._();
 
@@ -24,32 +21,15 @@ class App {
   final PeriodStore period = PeriodStore();
   final LanguageStore language = LanguageStore();
 
-  AccountingSettings? _settings;
-  Future<AccountingSettings>? _settingsRequest;
-
-  /// The configured shift names and windows, fetched once per run. A failure
-  /// is not cached: the next screen retries instead of being stuck with
-  /// generic labels forever.
-  Future<AccountingSettings> settings() {
-    final cached = _settings;
-    if (cached != null) return Future.value(cached);
-    return _settingsRequest ??= accounting.settings().then((value) {
-      _settings = value;
-      _settingsRequest = null;
-      return value;
-    }).catchError((Object error) {
-      _settingsRequest = null;
-      throw error;
-    });
-  }
-
-  AccountingSettings? get cachedSettings => _settings;
+  /// Bumped when the app returns to the foreground and when Ashgabat passes
+  /// midnight, so every screen that shows "today" asks again. Screens put
+  /// [refreshTick] into their request key.
+  final ValueNotifier<int> refresh = ValueNotifier<int>(0);
+  int get refreshTick => refresh.value;
 
   /// Signing out drops everything a different account must not inherit.
   Future<void> signOut() async {
     await auth.signOut();
-    _settings = null;
-    _settingsRequest = null;
   }
 }
 

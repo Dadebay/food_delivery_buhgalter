@@ -89,206 +89,120 @@ class _OrderTab extends StatelessWidget {
   final VoidCallback reload;
 
   @override
-  Widget build(BuildContext context) => _Refreshable(
-        reload: reload,
-        children: [
-          _StatusHeader(order: order),
-          const SizedBox(height: 12),
-          CardBox(
-            child: Column(
-              children: [
-                InfoRow(
-                  label: S.created,
-                  value: Ashgabat.dateTimeLabel(order.createdAt) ?? kUnknown,
-                  icon: AppIcons.day,
-                ),
-                InfoRow(
-                  label: S.source,
-                  value: Labels.orderSource(order.source),
-                  icon: AppIcons.orders,
-                ),
-                if ((order.branchName ?? '').isNotEmpty)
-                  InfoRow(
-                    label: S.kitchen,
-                    value: order.branchName!,
-                    icon: AppIcons.branch,
-                  ),
-                InfoRow(
-                  label: S.district,
-                  // Districts come from the names saved on the order; an
-                  // unknown one is shown as unknown rather than guessed from
-                  // the address.
-                  value: Fmt.text(order.deliveryEtrapName),
-                  icon: AppIcons.address,
-                ),
-              ],
-            ),
-          ),
+  Widget build(BuildContext context) {
+    final place = [
+      order.address,
+      if ((order.entrance ?? '').isNotEmpty) '${S.entrance} ${order.entrance}',
+      if ((order.floor ?? '').isNotEmpty) '${S.floor} ${order.floor}',
+      if ((order.apartment ?? '').isNotEmpty)
+        '${S.apartment} ${order.apartment}',
+    ].whereType<String>().where((part) => part.trim().isNotEmpty).join(', ');
+    final wish = (order.customerNote ?? '').trim();
 
-          SectionTitle(S.customer, icon: AppIcons.customer),
-          CardBox(
-            child: Column(
-              children: [
-                InfoRow(
-                    label: S.name,
-                    value: Fmt.text(order.customerName),
-                    icon: AppIcons.customer),
-                InfoRow(
-                    label: S.phone,
-                    value: Fmt.text(order.customerPhone),
-                    icon: AppIcons.phone),
-                if ((order.customerNote ?? '').trim().isNotEmpty)
-                  InfoRow(
-                      label: S.customerWish,
-                      value: order.customerNote!.trim(),
-                      icon: AppIcons.note),
-              ],
-            ),
-          ),
+    return _Refreshable(
+      reload: reload,
+      children: [
+        _StatusHeader(order: order),
+        const SizedBox(height: 12),
+        _FactCard(
+          icon: AppIcons.customer,
+          title: S.customer,
+          lines: [
+            Fmt.text(order.customerName),
+            if ((order.customerPhone ?? '').trim().isNotEmpty)
+              order.customerPhone!.trim(),
+          ],
+          note: wish.isEmpty ? null : '${S.customerWish}: $wish',
+        ),
+        const SizedBox(height: 10),
+        _FactCard(
+          icon: AppIcons.address,
+          title: S.address,
+          lines: [
+            place.isEmpty ? kUnknown : place,
+            if ((order.deliveryEtrapName ?? '').trim().isNotEmpty)
+              order.deliveryEtrapName!.trim(),
+          ],
+        ),
+        const SizedBox(height: 10),
+        _FactCard(
+          icon: AppIcons.courier,
+          title: S.participants,
+          lines: [
+            '${S.courier}: ${order.actualCourierUnknown ? S.courierUnknownShort : (order.courier?.fullName ?? kUnknown)}',
+            '${S.cook}: ${order.cook?.fullName ?? kUnknown}',
+          ],
+          note: order.actualCourierUnknown ? S.courierUnknownNote : null,
+        ),
+      ],
+    );
+  }
+}
 
-          SectionTitle(S.address, icon: AppIcons.address),
-          CardBox(
-            child: Column(
-              children: [
-                InfoRow(label: S.address, value: Fmt.text(order.address)),
-                if ((order.entrance ?? '').isNotEmpty)
-                  InfoRow(label: S.entrance, value: order.entrance!),
-                if ((order.floor ?? '').isNotEmpty)
-                  InfoRow(label: S.floor, value: order.floor!),
-                if ((order.apartment ?? '').isNotEmpty)
-                  InfoRow(label: S.apartment, value: order.apartment!),
-              ],
-            ),
-          ),
+/// A small titled card: an icon and a heading, then a few plain lines. The
+/// first line is the answer and is printed larger; the rest support it.
+class _FactCard extends StatelessWidget {
+  const _FactCard({
+    required this.icon,
+    required this.title,
+    required this.lines,
+    this.note,
+  });
 
-          SectionTitle(S.participants, icon: AppIcons.person),
-          if (order.actualCourierUnknown)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: NoticeBox(S.courierUnknownNote),
-            ),
-          CardBox(
-            child: Column(
-              children: [
-                InfoRow(
-                  label: S.courier,
-                  value: order.actualCourierUnknown
-                      ? S.courierUnknownShort
-                      : (order.courier?.fullName ?? kUnknown),
-                  valueColor:
-                      order.actualCourierUnknown ? kWarningColor : kBlackColor,
-                  icon: AppIcons.courier,
-                ),
-                InfoRow(
-                  label: S.cook,
-                  value: order.cook?.fullName ?? kUnknown,
-                  icon: AppIcons.cook,
-                ),
-                if (order.participants.isNotEmpty) ...[
-                  const Divider(height: 18, color: kBorderColor),
-                  for (final participant in order.participants)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 6),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              const AppIcon(AppIcons.person,
-                                  size: 15, color: kMutedColor),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  participant.actor?.fullName ?? kUnknown,
-                                  style: const TextStyle(
-                                    fontFamily: gilroySemiBold,
-                                    fontSize: 13.5,
-                                    color: kBlackColor,
-                                  ),
-                                ),
-                              ),
-                              if (participant.actor?.role != null)
-                                Text(
-                                  // The role arrives as the server spells it
-                                  // (`SUPER_ADMIN`); it is named in words
-                                  // here.
-                                  Labels.role(participant.actor!.role),
-                                  style: const TextStyle(
-                                    fontFamily: gilroyRegular,
-                                    fontSize: 11.5,
-                                    color: kMutedColor,
-                                  ),
-                                ),
-                            ],
-                          ),
-                          if (participant.actions.isNotEmpty) ...[
-                            const SizedBox(height: 6),
-                            Wrap(
-                              spacing: 6,
-                              runSpacing: 6,
-                              children: [
-                                for (final action in participant.actions)
-                                  Pill(Labels.participantAction(action),
-                                      color: kMutedColor),
-                              ],
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  const SizedBox(height: 4),
+  final List<List<dynamic>> icon;
+  final String title;
+  final List<String> lines;
+  final String? note;
+
+  @override
+  Widget build(BuildContext context) => CardBox(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AppIconBadge(icon, size: 40),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                   Text(
-                    S.participantsNote,
+                    title,
                     style: const TextStyle(
-                      fontFamily: gilroyRegular,
-                      fontSize: 11.5,
+                      fontFamily: gilroyMedium,
+                      fontSize: 12.5,
                       color: kMutedColor,
                     ),
                   ),
-                ],
-              ],
-            ),
-          ),
-
-          SectionTitle(S.stages, icon: AppIcons.transition),
-          CardBox(
-            child: Column(
-              children: [
-                InfoRow(
-                  label: S.assignedAt,
-                  value: Ashgabat.dateTimeLabel(order.assignedAt) ?? kUnknown,
-                ),
-                InfoRow(
-                  label: S.packedAt,
-                  value: Ashgabat.dateTimeLabel(order.packingConfirmedAt) ??
-                      kUnknown,
-                ),
-                InfoRow(
-                  label: S.deliveredAt,
-                  value: Ashgabat.dateTimeLabel(order.deliveredAt) ?? kUnknown,
-                ),
-                InfoRow(
-                  label: S.completedAt,
-                  value: Ashgabat.dateTimeLabel(order.completedAt) ?? kUnknown,
-                ),
-              ],
-            ),
-          ),
-
-          if (order.transitions.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            CardBox(
-              child: Column(
-                children: [
-                  for (var i = 0; i < order.transitions.length; i++) ...[
-                    if (i > 0) const Divider(height: 16, color: kBorderColor),
-                    _TransitionRow(transition: order.transitions[i]),
+                  const SizedBox(height: 3),
+                  for (var i = 0; i < lines.length; i++)
+                    Padding(
+                      padding: EdgeInsets.only(top: i == 0 ? 0 : 3),
+                      child: Text(
+                        lines[i],
+                        style: TextStyle(
+                          fontFamily: i == 0 ? gilroySemiBold : gilroyRegular,
+                          fontSize: i == 0 ? 15.5 : 13.5,
+                          color: i == 0 ? kBlackColor : kMutedColor,
+                        ),
+                      ),
+                    ),
+                  if (note != null) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      note!,
+                      style: const TextStyle(
+                        fontFamily: gilroyRegular,
+                        fontSize: 12.5,
+                        color: kWarningColor,
+                      ),
+                    ),
                   ],
                 ],
               ),
             ),
           ],
-        ],
+        ),
       );
 }
 
@@ -303,6 +217,10 @@ class _StatusHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final settlement = order.settlement;
+    final where = [order.branchName, order.deliveryEtrapName]
+        .whereType<String>()
+        .where((part) => part.trim().isNotEmpty)
+        .join(' · ');
     return CardBox(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -313,7 +231,7 @@ class _StatusHeader extends StatelessWidget {
               AppIconBadge(
                 AppIcons.orders,
                 color: Labels.orderStatusColor(order.status),
-                size: 44,
+                size: 46,
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -337,7 +255,7 @@ class _StatusHeader extends StatelessWidget {
                       Ashgabat.dateTimeLabel(order.createdAt) ?? kUnknown,
                       style: const TextStyle(
                         fontFamily: gilroyRegular,
-                        fontSize: 12,
+                        fontSize: 12.5,
                         color: kMutedColor,
                       ),
                     ),
@@ -346,56 +264,41 @@ class _StatusHeader extends StatelessWidget {
               ),
             ],
           ),
-          const Divider(height: 20, color: kBorderColor),
-          _StatusLine(
-            label: S.deliveryStatus,
-            value: Labels.orderStatus(order.status),
-            color: Labels.orderStatusColor(order.status),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              Pill(
+                Labels.orderStatus(order.status),
+                color: Labels.orderStatusColor(order.status),
+              ),
+              Pill(
+                settlement == null
+                    ? S.packetNotCreated
+                    : Labels.settlementStatus(settlement.status),
+                color: settlement == null
+                    ? kMutedColor
+                    : Labels.settlementStatusColor(settlement.status),
+                icon: AppIcons.money,
+              ),
+            ],
           ),
-          const SizedBox(height: 8),
-          _StatusLine(
-            label: S.moneyStatus,
-            value: settlement == null
-                ? S.packetNotCreated
-                : Labels.settlementStatus(settlement.status),
-            color: settlement == null
-                ? kMutedColor
-                : Labels.settlementStatusColor(settlement.status),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _StatusLine extends StatelessWidget {
-  const _StatusLine({
-    required this.label,
-    required this.value,
-    required this.color,
-  });
-
-  final String label;
-  final String value;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) => Row(
-        children: [
-          Expanded(
-            child: Text(
-              label,
+          if (where.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Text(
+              where,
               style: const TextStyle(
                 fontFamily: gilroyRegular,
                 fontSize: 13,
                 color: kMutedColor,
               ),
             ),
-          ),
-          const SizedBox(width: 10),
-          Flexible(child: Pill(value, color: color)),
+          ],
         ],
-      );
+      ),
+    );
+  }
 }
 
 // ── Tab 2: the receipt ──────────────────────────────────────────────────
@@ -807,59 +710,6 @@ class _ReceiptLine extends StatelessWidget {
   }
 }
 
-class _TransitionRow extends StatelessWidget {
-  const _TransitionRow({required this.transition});
-
-  final OrderTransition transition;
-
-  @override
-  Widget build(BuildContext context) => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const AppIcon(AppIcons.transition, size: 15, color: kMutedColor),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  '${Labels.orderStatus(transition.fromStatus)} → '
-                  '${Labels.orderStatus(transition.toStatus)}',
-                  style: const TextStyle(
-                    fontFamily: gilroySemiBold,
-                    fontSize: 13,
-                    color: kBlackColor,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Text(
-            '${transition.actor?.fullName ?? kUnknown} · '
-            '${Ashgabat.dateTimeLabel(transition.createdAt) ?? kUnknown}',
-            style: const TextStyle(
-              fontFamily: gilroyRegular,
-              fontSize: 12,
-              color: kMutedColor,
-            ),
-          ),
-          if ((transition.note ?? '').trim().isNotEmpty) ...[
-            const SizedBox(height: 4),
-            Text(
-              // A cancellation note is often a stored reason key rather than
-              // a sentence somebody typed.
-              Labels.cancelReason(transition.note),
-              style: const TextStyle(
-                fontFamily: gilroyMedium,
-                fontSize: 12.5,
-                color: kBlackColor,
-              ),
-            ),
-          ],
-        ],
-      );
-}
-
 // ── Tab 3: the history ──────────────────────────────────────────────────
 
 class _HistoryTab extends StatelessWidget {
@@ -873,12 +723,22 @@ class _HistoryTab extends StatelessWidget {
         storageKey: 'order-audit-$orderId',
         emptyTitle: S.historyEmpty,
         emptyMessage: S.historyEmptyMessage,
+        separator: 0,
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
         fetch: (page) =>
             App.instance.accounting.orderAudit(orderId, page: page),
         header: Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: NoticeBox(S.historyNote, color: kPrimaryColor),
+          padding: const EdgeInsets.only(bottom: 16),
+          child: Text(
+            S.historyNote,
+            style: const TextStyle(
+              fontFamily: gilroyRegular,
+              fontSize: 12,
+              color: kMutedColor,
+            ),
+          ),
         ),
-        itemBuilder: (context, entry, _) => AuditTile(entry: entry),
+        itemBuilder: (context, entry, index) =>
+            AuditTimelineTile(entry: entry),
       );
 }

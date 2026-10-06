@@ -93,6 +93,15 @@ class Ashgabat {
     return DateFormat('dd.MM.yyyy, HH:mm').format(toLocal(instant));
   }
 
+  /// A packet's own period, frozen when it was handed over: it may start in
+  /// the evening of one day and cross midnight, and is never trimmed to a day.
+  static String? periodLabel(DateTime? start, DateTime? end) {
+    final from = dateTimeLabel(start);
+    final to = dateTimeLabel(end);
+    if (from == null || to == null) return null;
+    return '$from – $to';
+  }
+
   static String? timeLabel(DateTime? instant) {
     if (instant == null) return null;
     return DateFormat('HH:mm').format(toLocal(instant));

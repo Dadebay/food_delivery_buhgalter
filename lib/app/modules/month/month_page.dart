@@ -11,16 +11,16 @@ import '../../data/models/overview.dart';
 import '../../data/strings.dart';
 import '../../widgets/async_loader.dart';
 import '../../widgets/daily_charts.dart';
-import '../../widgets/expandable_list.dart';
 import '../../widgets/language_action.dart';
 import '../../widgets/month_picker.dart';
+import '../../widgets/ranked_card.dart';
 import '../../widgets/ui.dart';
 import '../orders/orders_page.dart';
 
-/// The month, built from the three range calls the spec prescribes.
+/// The month, built from two range calls.
 ///
-/// There is no `/monthly` endpoint: `overview`, `report` and `shifts` are
-/// asked in parallel, and the rest of the sections load when they are opened
+/// There is no `/monthly` endpoint: `overview` and `report` are asked in
+/// parallel, and the rest of the sections load when they are opened
 /// rather than being downloaded here to build charts.
 ///
 /// The page reads top to bottom as one answer: what came in, what was
@@ -33,7 +33,8 @@ class MonthPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final period = App.instance.period;
     return AnimatedBuilder(
-      animation: Listenable.merge([period, App.instance.language]),
+      animation: Listenable.merge(
+          [period, App.instance.language, App.instance.refresh]),
       builder: (context, _) => DefaultTabController(
         length: 3,
         child: AppScaffold(
@@ -48,7 +49,8 @@ class MonthPage extends StatelessWidget {
             ],
           ),
           child: AsyncLoader<MonthBundle>(
-            requestKey: '${period.fromDate}:${period.toDate}',
+            requestKey:
+                '${period.fromDate}:${period.toDate}:${App.instance.refreshTick}',
             request: () => App.instance.accounting
                 .month(fromDate: period.fromDate, toDate: period.toDate),
             builder: (context, bundle, reload) => TabBarView(
@@ -67,33 +69,22 @@ class MonthPage extends StatelessWidget {
   /// Everything that came in and where it stands.
   List<Widget> _money(BuildContext context, MonthBundle bundle, DateTime month) {
     final report = bundle.report.summary;
-    final discrepancy = report.handoffDiscrepancy;
     return [
-      _HeadlineCard(
-        icon: AppIcons.collected,
-        accent: kPositiveColor,
-        caption: S.received,
-        value: Fmt.money(report.collectedAmount),
-        rows: [
-          _Row(S.handedOver, Fmt.money(report.submittedAmount)),
-          _Row(S.confirmedMoney, Fmt.money(report.confirmedAmount),
-              color: kPositiveColor),
-          _Row(S.outstanding, Fmt.money(report.outstandingAmount),
-              color: kWarningColor),
-          _Row(S.declaredByPackets, Fmt.money(report.declaredHandoffAmount)),
-          if (discrepancy != null && discrepancy != 0)
-            _Row(
-              S.discrepancy,
-              Fmt.signedMoney(discrepancy),
-              color: discrepancy < 0 ? kNegativeColor : kWarningColor,
-            ),
-        ],
+      _PairCard(
+        left: _Figure(
+          S.received,
+          Fmt.money(report.collectedAmount),
+          AppIcons.collected,
+          kPositiveColor,
+        ),
+        right: _Figure(
+          S.checkName,
+          Fmt.count(report.completedOrders),
+          AppIcons.money,
+          kPrimaryColor,
+        ),
       ),
-      if (discrepancy != null && discrepancy != 0) ...[
-        const SizedBox(height: 10),
-        NoticeBox(S.discrepancyNote, color: kPrimaryColor),
-      ],
-      const SizedBox(height: 16),
+      const SizedBox(height: 14),
       DailyMoneyChart(
         points: alignMoney(month, bundle.report.daily),
         onDayTap: (day) => _openDay(context, day, OrderBasis.cashReturned),
@@ -105,21 +96,21 @@ class MonthPage extends StatelessWidget {
   List<Widget> _orders(BuildContext context, MonthBundle bundle, DateTime month) {
     final overview = bundle.overview.summary;
     return [
-      _HeadlineCard(
-        icon: AppIcons.orders,
-        accent: kPrimaryColor,
-        caption: S.createdOrders,
-        value: Fmt.count(overview.createdOrders),
-        rows: [
-          _Row(S.cancelledNow, Fmt.count(overview.cancelledOrders),
-              color: kNegativeColor),
-          _Row(S.cancelShare, Fmt.percent(overview.cancellationRate)),
-          _Row(S.cancelEvents, Fmt.count(overview.cancellationEvents)),
-          _Row(S.editEvents, Fmt.count(overview.editEvents)),
-          _Row(S.foodAmount, Fmt.money(overview.foodAmount)),
-        ],
+      _PairCard(
+        left: _Figure(
+          S.createdOrders,
+          Fmt.count(overview.createdOrders),
+          AppIcons.orders,
+          kPrimaryColor,
+        ),
+        right: _Figure(
+          S.cancelledNow,
+          Fmt.count(overview.cancelledOrders),
+          AppIcons.cancelled,
+          kNegativeColor,
+        ),
       ),
-      const SizedBox(height: 16),
+      const SizedBox(height: 14),
       DailyOrdersChart(
         points: alignOrders(month, bundle.overview.daily),
         onDayTap: (day) => _openDay(context, day, OrderBasis.created),
@@ -131,38 +122,40 @@ class MonthPage extends StatelessWidget {
   /// what they ordered.
   List<Widget> _breakdown(MonthBundle bundle) {
     final overview = bundle.overview;
+    List<RankRow> named(List<NamedCount> rows, {bool reasons = false}) => [
+          for (final row in rows)
+            RankRow(
+              // An unknown district is shown as such, never guessed.
+              name: reasons
+                  ? Labels.cancelReason(row.name)
+                  : Fmt.text(row.name),
+              count: row.count ?? 0,
+              amount: row.foodAmount,
+            ),
+        ];
+    List<RankRow> products(List<ProductDemand> rows) => [
+          for (final row in rows)
+            RankRow(name: Fmt.text(row.name), count: row.quantity ?? 0),
+        ];
+
     final sections = <Widget>[
-      if (overview.districts.isNotEmpty) ...[
-        SectionTitle(S.districts, icon: AppIcons.address),
-        _CountList(rows: overview.districts),
-      ],
-      if (overview.branches.isNotEmpty) ...[
-        SectionTitle(S.kitchens, icon: AppIcons.branch),
-        _CountList(rows: overview.branches),
-      ],
-      if (overview.cancellationReasons.isNotEmpty) ...[
-        SectionTitle(S.cancelReasons, icon: AppIcons.cancelled),
-        // A reason arrives as a stored key or as free text; both are named
-        // in the reader's own language where the app knows the key.
-        _CountList(rows: overview.cancellationReasons, reasons: true),
-      ],
-      if (overview.mostOrderedProducts.isNotEmpty) ...[
-        SectionTitle(S.mostOrdered, icon: AppIcons.ranking),
-        _ProductList(rows: overview.mostOrderedProducts),
-      ],
-      if (overview.leastOrderedProducts.isNotEmpty) ...[
-        SectionTitle(S.leastOrdered, icon: AppIcons.ranking),
-        _ProductList(rows: overview.leastOrderedProducts),
-        const SizedBox(height: 8),
-        Text(
-          S.demandNote,
-          style: const TextStyle(
-            fontFamily: gilroyRegular,
-            fontSize: 11.5,
-            color: kMutedColor,
-          ),
+      if (overview.mostOrderedProducts.isNotEmpty)
+        RankedCard(
+          title: S.mostOrdered,
+          icon: AppIcons.ranking,
+          accent: kPositiveColor,
+          donut: false,
+          rows: products(overview.mostOrderedProducts),
         ),
-      ],
+      if (overview.cancellationReasons.isNotEmpty)
+        RankedCard(
+          title: S.cancelReasons,
+          icon: AppIcons.cancelled,
+          accent: kNegativeColor,
+          // A reason arrives as a stored key or as free text; both are named
+          // in the reader's own language where the app knows the key.
+          rows: named(overview.cancellationReasons, reasons: true),
+        ),
     ];
     if (sections.isEmpty) {
       return [
@@ -179,7 +172,12 @@ class MonthPage extends StatelessWidget {
         ),
       ];
     }
-    return sections;
+    return [
+      for (var i = 0; i < sections.length; i++) ...[
+        if (i > 0) const SizedBox(height: 14),
+        sections[i],
+      ],
+    ];
   }
 
   /// A tap on a day opens that day's orders on the basis of the chart that
@@ -214,137 +212,91 @@ class _Tab extends StatelessWidget {
         color: kPrimaryColor,
         onRefresh: () async => reload(),
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 6, 16, 28),
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
           physics: const AlwaysScrollableScrollPhysics(),
           children: children,
         ),
       );
 }
 
-class _Row {
-  const _Row(this.label, this.value, {this.color});
+class _Figure {
+  const _Figure(this.label, this.value, this.icon, this.color);
 
   final String label;
   final String value;
-  final Color? color;
+  final List<List<dynamic>> icon;
+  final Color color;
 }
 
-/// One headline figure with its supporting rows.
-///
-/// This replaced a grid of six equal tiles: six numbers of the same size say
-/// nothing about which one to read first.
-class _HeadlineCard extends StatelessWidget {
-  const _HeadlineCard({
-    required this.icon,
-    required this.accent,
-    required this.caption,
-    required this.value,
-    required this.rows,
-  });
+/// Two figures side by side on one slim card — for a tab whose answer is a
+/// pair of numbers, where a tall hero would only be empty space. Each figure
+/// carries its own colour: red cannot be read on a coloured card, so this
+/// one is white.
+class _PairCard extends StatelessWidget {
+  const _PairCard({required this.left, required this.right});
 
-  final List<List<dynamic>> icon;
-  final Color accent;
-  final String caption;
-  final String value;
-  final List<_Row> rows;
+  final _Figure left;
+  final _Figure right;
 
   @override
   Widget build(BuildContext context) => CardBox(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                AppIconBadge(icon, color: accent, size: 42),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        caption,
-                        style: const TextStyle(
-                          fontFamily: gilroyMedium,
-                          fontSize: 12.5,
-                          color: kMutedColor,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      FittedBox(
-                        fit: BoxFit.scaleDown,
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          value,
-                          style: TextStyle(
-                            fontFamily: gilroyBold,
-                            fontSize: 24,
-                            color: accent,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            if (rows.isNotEmpty) const Divider(height: 20, color: kBorderColor),
-            for (final row in rows)
-              InfoRow(
-                label: row.label,
-                value: row.value,
-                valueColor: row.color ?? kBlackColor,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: IntrinsicHeight(
+          child: Row(
+            children: [
+              Expanded(child: _FigureView(left)),
+              Container(
+                width: 1,
+                margin: const EdgeInsets.symmetric(horizontal: 14),
+                color: kBorderColor,
               ),
-          ],
+              Expanded(child: _FigureView(right)),
+            ],
+          ),
         ),
       );
 }
 
-class _CountList extends StatelessWidget {
-  const _CountList({required this.rows, this.reasons = false});
+class _FigureView extends StatelessWidget {
+  const _FigureView(this.figure);
 
-  final List<NamedCount> rows;
-
-  /// Whether these names are cancellation reasons, which have a dictionary.
-  final bool reasons;
+  final _Figure figure;
 
   @override
-  Widget build(BuildContext context) {
-    final top = rows.fold<int>(
-        0, (best, row) => (row.count ?? 0) > best ? (row.count ?? 0) : best);
-    return ExpandableList(
-      itemCount: rows.length,
-      itemBuilder: (context, i) => NamedCountRow(
-        // An unknown district is shown as such, never guessed.
-        name: reasons
-            ? Labels.cancelReason(rows[i].name)
-            : Fmt.text(rows[i].name),
-        count: rows[i].count,
-        amount: rows[i].foodAmount,
-        share: top == 0 ? 0 : (rows[i].count ?? 0) / top,
-      ),
-    );
-  }
-}
-
-class _ProductList extends StatelessWidget {
-  const _ProductList({required this.rows});
-
-  final List<ProductDemand> rows;
-
-  @override
-  Widget build(BuildContext context) {
-    final top = rows.fold<int>(
-        0,
-        (best, row) =>
-            (row.quantity ?? 0) > best ? (row.quantity ?? 0) : best);
-    return ExpandableList(
-      itemCount: rows.length,
-      itemBuilder: (context, i) => NamedCountRow(
-        name: Fmt.text(rows[i].name),
-        count: rows[i].quantity,
-        share: top == 0 ? 0 : (rows[i].quantity ?? 0) / top,
-      ),
-    );
-  }
+  Widget build(BuildContext context) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              AppIcon(figure.icon, size: 14, color: figure.color),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  figure.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontFamily: gilroyMedium,
+                    fontSize: 11.5,
+                    color: kMutedColor,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              figure.value,
+              style: TextStyle(
+                fontFamily: gilroyBold,
+                fontSize: 24,
+                color: figure.color,
+              ),
+            ),
+          ),
+        ],
+      );
 }

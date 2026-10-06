@@ -1,112 +1,95 @@
 import 'paged.dart';
 
-/// The shift names and boundaries, read from `GET /accounting/settings`.
+/// One calendar day of the cash book — `GET /accounting/days`.
 ///
-/// The times are never hardcoded in the app. 09:30/19:00 is today's schedule,
-/// not a property of the product, and an app that baked them in would start
-/// lying the day the owner changes them.
-class AccountingSettings {
-  const AccountingSettings({this.shifts = const []});
-
-  final List<ShiftDefinition> shifts;
-
-  factory AccountingSettings.fromJson(dynamic json) {
-    if (json is! Map<String, dynamic>) return const AccountingSettings();
-    final raw = json['shifts'];
-    return AccountingSettings(
-      shifts: raw is List
-          ? raw
-              .whereType<Map<String, dynamic>>()
-              .map(ShiftDefinition.fromJson)
-              .toList()
-          : const [],
-    );
-  }
-
-  /// The configured name for `first`/`second`, or null when the settings have
-  /// not been read — callers fall back to a generic label rather than to an
-  /// invented time.
-  String? nameFor(String slot) {
-    for (final shift in shifts) {
-      if (shift.slot == slot) return shift.name;
-    }
-    return null;
-  }
-}
-
-class ShiftDefinition {
-  const ShiftDefinition({
-    required this.slot,
-    this.name,
-    this.startsAt,
-    this.endsAt,
-  });
-
-  /// `first` or `second`, the half of `shiftKey` after the colon.
-  final String slot;
-  final String? name;
-  final String? startsAt;
-  final String? endsAt;
-
-  factory ShiftDefinition.fromJson(Map<String, dynamic> json) => ShiftDefinition(
-        slot: (json['slot'] ?? json['key'] ?? '').toString(),
-        name: json['name'] as String?,
-        startsAt: json['startsAt'] as String?,
-        endsAt: json['endsAt'] as String?,
-      );
-
-  String get window =>
-      startsAt == null || endsAt == null ? '' : '$startsAt – $endsAt';
-}
-
-/// One shift in a range — `GET /accounting/shifts`.
-class ShiftSummary {
-  const ShiftSummary({
+/// The JSON and Swagger names (`shiftKey`, `AccountingShiftResponseDto`) are
+/// kept by the server for compatibility; in this app it is a **day**,
+/// 00:00–00:00 in Ashgabat, and its key always ends in `:day`.
+class CashDay {
+  const CashDay({
     required this.shiftKey,
-    this.name,
-    this.date,
-    this.startsAt,
-    this.endsAt,
+    this.shiftName,
+    this.periodStart,
+    this.periodEnd,
+    this.isComplete = false,
     this.expectedAmount,
-    this.collectedAmount,
-    this.orderCount,
+    this.availableAmount,
+    this.settlementCount,
+    this.canSubmit = false,
+    this.state,
     this.handoff,
+    this.historicalHandoffs = const [],
   });
 
-  /// `2025-02-01:first` — replaces the calendar range wherever it is accepted.
-  /// `/report` and `/shifts` do **not** take it.
+  /// `2026-10-04:day` — replaces the calendar range wherever it is accepted.
+  /// `/report` and `/days` do **not** take it.
   final String shiftKey;
-  final String? name;
-  final DateTime? date;
-  final DateTime? startsAt;
-  final DateTime? endsAt;
+  final String? shiftName;
+  final DateTime? periodStart;
+  final DateTime? periodEnd;
 
-  /// What the shift is expected to hand over, as the server computed it.
+  /// The day has already ended by the server's clock.
+  final bool isComplete;
+
+  /// All food money counted for the day, including what is already in a
+  /// packet or reconciled.
   final double? expectedAmount;
-  final double? collectedAmount;
-  final int? orderCount;
 
-  /// The money packet for this shift, once one exists.
+  /// Confirmed money not yet included in any packet.
+  final double? availableAmount;
+
+  /// Money records of the day — not the number of orders created that day.
+  final int? settlementCount;
+
+  /// There is something to hand over. Not a personal permission.
+  final bool canSubmit;
+
+  /// `OPEN`, `EMPTY`, `READY`, `SUBMITTED`, `CONFIRMED`.
+  final String? state;
+
   final CashHandoff? handoff;
+  final List<CashHandoff> historicalHandoffs;
 
-  factory ShiftSummary.fromJson(Map<String, dynamic> json) => ShiftSummary(
+  factory CashDay.fromJson(Map<String, dynamic> json) => CashDay(
         shiftKey: (json['shiftKey'] ?? '').toString(),
-        name: json['name'] as String?,
-        date: DateTime.tryParse(json['date'] as String? ?? ''),
-        startsAt: DateTime.tryParse(json['startsAt'] as String? ?? ''),
-        endsAt: DateTime.tryParse(json['endsAt'] as String? ?? ''),
+        shiftName: json['shiftName'] as String?,
+        periodStart: DateTime.tryParse(json['periodStart'] as String? ?? ''),
+        periodEnd: DateTime.tryParse(json['periodEnd'] as String? ?? ''),
+        isComplete: json['isComplete'] as bool? ?? false,
         expectedAmount: asDouble(json['expectedAmount']),
-        collectedAmount: asDouble(json['collectedAmount']),
-        orderCount: asInt(json['orderCount']),
+        availableAmount: asDouble(json['availableAmount']),
+        settlementCount: asInt(json['settlementCount']),
+        canSubmit: json['canSubmit'] as bool? ?? false,
+        state: json['state'] as String?,
         handoff: CashHandoff.fromJson(json['handoff']),
+        historicalHandoffs: (json['historicalHandoffs'] as List<dynamic>? ??
+                const [])
+            .map(CashHandoff.fromJson)
+            .whereType<CashHandoff>()
+            .toList(),
       );
 
-  /// The calendar day half of the key, for grouping two shifts under one day.
+  /// The calendar date half of the key, `2026-10-04`.
   String get dayKey =>
       shiftKey.contains(':') ? shiftKey.split(':').first : shiftKey;
 
-  String get slot =>
-      shiftKey.contains(':') ? shiftKey.split(':').last : '';
+  /// The new daily packet and the old ones, without nulls or duplicates.
+  List<CashHandoff> get packets {
+    final seen = <String>{};
+    return [
+      if (handoff != null) handoff!,
+      ...historicalHandoffs,
+    ].where((packet) => seen.add(packet.id)).toList();
+  }
+
+  /// What the accountant can act on. Decided by each packet's own status, not
+  /// by [state]: a day can keep old packets while its own `handoff` is null.
+  List<CashHandoff> get pending =>
+      packets.where((packet) => packet.isSubmitted).toList();
+
+  /// Today's day may only be handed over once it has ended; the server
+  /// refuses it either way.
+  bool get canCreatePacket => isComplete && canSubmit && handoff == null;
 }
 
 /// A handed-over money packet. Its own boundaries are frozen when it is
@@ -125,6 +108,9 @@ class CashHandoff {
     this.note,
     this.confirmationNote,
     this.shiftKey,
+    this.shiftName,
+    this.periodStart,
+    this.periodEnd,
   });
 
   final String id;
@@ -141,7 +127,11 @@ class CashHandoff {
   final String? note;
   final String? confirmationNote;
   final String? shiftKey;
+  final String? shiftName;
+  final DateTime? periodStart;
+  final DateTime? periodEnd;
 
+  bool get isSubmitted => (status ?? '').toUpperCase() == 'SUBMITTED';
   bool get isConfirmed => (status ?? '').toUpperCase() == 'CONFIRMED';
 
   /// Declared minus expected. Negative is a shortfall. It is not a fee and
@@ -167,6 +157,9 @@ class CashHandoff {
       note: json['note'] as String?,
       confirmationNote: json['confirmationNote'] as String?,
       shiftKey: json['shiftKey'] as String?,
+      shiftName: json['shiftName'] as String?,
+      periodStart: DateTime.tryParse(json['periodStart'] as String? ?? ''),
+      periodEnd: DateTime.tryParse(json['periodEnd'] as String? ?? ''),
     );
   }
 }

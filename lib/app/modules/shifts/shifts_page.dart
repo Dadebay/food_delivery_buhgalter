@@ -4,7 +4,6 @@ import '../../constants/app_icons.dart';
 import '../../constants/constants.dart';
 import '../../data/app_state.dart';
 import '../../data/ashgabat_time.dart';
-import '../../data/auth_service.dart';
 import '../../data/formatting.dart';
 import '../../data/labels.dart';
 import '../../data/models/shift.dart';
@@ -13,14 +12,13 @@ import '../../widgets/async_loader.dart';
 import '../../widgets/language_action.dart';
 import '../../widgets/month_picker.dart';
 import '../../widgets/ui.dart';
-import 'handoff_sheet.dart';
 import 'shift_detail_page.dart';
 
-/// The shifts of the chosen month, with what each owes and its money packet.
+/// The days of the chosen month: what each owes, its money packets, and the
+/// queue of packets still waiting for the accountant.
 ///
-/// `/shifts` takes calendar dates only — a shift key is not accepted here —
-/// and a whole day's report is never labelled as one shift's takings: each
-/// amount below comes from that shift's own entry.
+/// `/days` takes calendar dates only — a day key is not accepted here — and
+/// every figure is that day's own entry, never a report total relabelled.
 class ShiftsPage extends StatelessWidget {
   const ShiftsPage({super.key});
 
@@ -29,409 +27,391 @@ class ShiftsPage extends StatelessWidget {
     final period = App.instance.period;
     final language = App.instance.language;
     return AnimatedBuilder(
-      animation: Listenable.merge([period, language]),
+      animation: Listenable.merge([period, language, App.instance.refresh]),
       builder: (context, _) => AppScaffold(
         title: S.shiftsMoney,
         subtitle: Ashgabat.monthLabel(period.month),
         actions: const [MonthAction(), LanguageAction(), SizedBox(width: 4)],
-        child: AsyncLoader<_ShiftsData>(
-          requestKey: '${period.fromDate}:${period.toDate}',
+        child: AsyncLoader<_CashData>(
+          requestKey:
+              '${period.fromDate}:${period.toDate}:${App.instance.refreshTick}',
           request: () async {
-            final shifts = await App.instance.accounting.shifts(
-              fromDate: period.fromDate,
-              toDate: period.toDate,
-            );
-            // Names and windows come from the API; 09:30/19:00 is never
-            // hardcoded. Losing them only costs the caption.
-            AccountingSettings? settings;
-            try {
-              settings = await App.instance.settings();
-            } catch (_) {
-              settings = null;
-            }
-            return _ShiftsData(shifts: shifts, settings: settings);
+            // The month being read, and — whatever the month — the recent
+            // days, so money still waiting from an earlier month is not
+            // hidden by the month picker.
+            final now = Ashgabat.now();
+            final results = await Future.wait([
+              App.instance.accounting.days(
+                fromDate: period.fromDate,
+                toDate: period.toDate,
+              ),
+              App.instance.accounting.days(
+                fromDate: Ashgabat.date(
+                    now.subtract(const Duration(days: kArrearsLookbackDays))),
+                toDate: Ashgabat.date(now),
+              ),
+            ]);
+            return _CashData(month: results[0], recent: results[1]);
           },
-          builder: (context, data, reload) => RefreshIndicator(
-            color: kPrimaryColor,
-            onRefresh: () async => reload(),
-            child: _ShiftsList(data: data, onChanged: reload),
-          ),
+          builder: (context, data, reload) =>
+              _CashTabs(data: data, onChanged: reload),
         ),
       ),
     );
   }
 }
 
-class _ShiftsData {
-  const _ShiftsData({required this.shifts, this.settings});
+class _CashData {
+  const _CashData({required this.month, required this.recent});
 
-  final List<ShiftSummary> shifts;
-  final AccountingSettings? settings;
+  /// The days of the month on screen.
+  final List<CashDay> month;
 
-  /// Two shifts under one calendar day, newest day first.
-  ///
-  /// The books are read from today backwards, so today sits at the top and
-  /// nobody scrolls the whole month to reach the shift they are standing in.
-  /// Within a day the later shift comes first for the same reason.
-  Map<String, List<ShiftSummary>> get grouped {
-    final result = <String, List<ShiftSummary>>{};
-    for (final shift in shifts) {
-      result.putIfAbsent(shift.dayKey, () => []).add(shift);
-    }
-    for (final day in result.values) {
-      day.sort((a, b) {
-        final byStart = (b.startsAt ?? DateTime(0)).compareTo(a.startsAt ?? DateTime(0));
-        // Without times to compare, `second` still belongs above `first`.
-        return byStart != 0 ? byStart : b.slot.compareTo(a.slot);
-      });
-    }
-    final days = result.keys.toList()..sort((a, b) => b.compareTo(a));
-    return {for (final day in days) day: result[day]!};
+  /// The last [kArrearsLookbackDays] days, whatever month that is.
+  final List<CashDay> recent;
+
+  /// Both lists as one, a day once.
+  List<CashDay> get all {
+    final seen = <String>{};
+    return [...month, ...recent].where((d) => seen.add(d.shiftKey)).toList();
   }
 }
 
-/// The month's shifts with today at the top and the rest folded away.
+/// Packets that are waiting for the accountant, without duplicates.
 ///
-/// A month holds sixty cards and only two of them are the shift somebody is
-/// standing in. Today is printed on its own and the earlier days stay behind
-/// one button — they are still here, and the button says how many days that
-/// is, because a list cut silently is worse than a long one.
-class _ShiftsList extends StatefulWidget {
-  const _ShiftsList({required this.data, required this.onChanged});
+/// Decided by each packet's own `SUBMITTED` status. The month's period is the
+/// period the packet **started** in, not the date it will be confirmed.
+List<CashHandoff> pendingPackets(Iterable<CashDay> days) {
+  final seen = <String>{};
+  return [
+    for (final day in days)
+      for (final packet in day.pending)
+        if (seen.add(packet.id)) packet,
+  ];
+}
 
-  final _ShiftsData data;
+/// Two tabs: the latest week, and what is still outstanding.
+///
+/// «Эта неделя» comes first and lists the latest seven days; days that have
+/// not happened yet are not listed at all, and the older days of the month sit
+/// behind a button that says how many there are. «Ещё не передано» gathers
+/// everything that still needs somebody — packets waiting for the
+/// accountant, and finished days nobody has handed over — from the last
+/// [kArrearsLookbackDays] days whatever month is chosen, and carries its
+/// count on the tab so it is never out of sight.
+class _CashTabs extends StatelessWidget {
+  const _CashTabs({required this.data, required this.onChanged});
+
+  final _CashData data;
   final VoidCallback onChanged;
 
   @override
-  State<_ShiftsList> createState() => _ShiftsListState();
+  Widget build(BuildContext context) {
+    final outstanding = _Outstanding.of(data);
+    return DefaultTabController(
+      length: 2,
+      child: Column(
+        children: [
+          SegmentedTabBar(
+            tabs: [
+              SegmentTab(
+                App.instance.period.isCurrentMonth
+                    ? S.thisWeek
+                    : S.lastDays,
+                icon: AppIcons.day,
+              ),
+              SegmentTab(
+                outstanding.count == 0
+                    ? S.notHandedOver
+                    : '${S.notHandedOver} (${outstanding.count})',
+                icon: AppIcons.warning,
+              ),
+            ],
+          ),
+          Expanded(
+            child: TabBarView(
+              children: [
+                _WeekTab(data: data, onChanged: onChanged),
+                _OutstandingTab(outstanding: outstanding, onChanged: onChanged),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
-class _ShiftsListState extends State<_ShiftsList> {
+/// What still needs somebody, worked out once for both the tab's label and
+/// its body.
+class _Outstanding {
+  const _Outstanding({required this.waiting, required this.unhanded});
+
+  /// Days holding a packet that is waiting for the accountant.
+  final List<CashDay> waiting;
+
+  /// Finished days with money outside every packet.
+  final List<CashDay> unhanded;
+
+  /// Distinct days, so a day that is both is counted once.
+  int get count =>
+      {...waiting.map((d) => d.shiftKey), ...unhanded.map((d) => d.shiftKey)}
+          .length;
+
+  factory _Outstanding.of(_CashData data) {
+    final today = Ashgabat.date(Ashgabat.now());
+    final all = data.all;
+    int newestFirst(CashDay a, CashDay b) => b.dayKey.compareTo(a.dayKey);
+    return _Outstanding(
+      waiting: all.where((day) => day.pending.isNotEmpty).toList()
+        ..sort(newestFirst),
+      unhanded: all
+          .where((day) =>
+              day.isComplete &&
+              day.dayKey != today &&
+              (day.availableAmount ?? 0) > 0)
+          .toList()
+        ..sort(newestFirst),
+    );
+  }
+}
+
+class _WeekTab extends StatefulWidget {
+  const _WeekTab({required this.data, required this.onChanged});
+
+  final _CashData data;
+  final VoidCallback onChanged;
+
+  @override
+  State<_WeekTab> createState() => _WeekTabState();
+}
+
+class _WeekTabState extends State<_WeekTab> {
+  static const _weekDays = 7;
   bool _expanded = false;
 
   @override
   Widget build(BuildContext context) {
-    final grouped = widget.data.grouped;
-    final days = grouped.keys.toList();
-    final todayKey = Ashgabat.date(Ashgabat.now());
+    final today = Ashgabat.date(Ashgabat.now());
+    // Newest first, and nothing from the future: ISO dates compare as text.
+    final sorted = widget.data.month
+        .where((day) => day.dayKey.compareTo(today) <= 0)
+        .toList()
+      ..sort((a, b) => b.dayKey.compareTo(a.dayKey));
+    final week = sorted.take(_weekDays).toList();
+    final older = sorted.skip(_weekDays).toList();
 
-    // The day to open on: today when the month has it, otherwise the latest
-    // day the month does have — a past month opens on its last working day
-    // rather than on nothing at all.
-    final hasToday = grouped.containsKey(todayKey);
-    final leadDay = hasToday ? todayKey : (days.isEmpty ? null : days.first);
-    final rest = days.where((day) => day != leadDay).toList();
-
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
-      physics: const AlwaysScrollableScrollPhysics(),
-      children: [
-        if (days.isEmpty)
-          CardBox(
-            child: Text(
-              S.noShifts,
-              style: const TextStyle(
-                fontFamily: gilroyRegular,
-                fontSize: 13.5,
-                color: kMutedColor,
-              ),
-            ),
-          )
-        else ...[
-          // Saying "today has no shift yet" is not the same as an empty
-          // month, and the accountant is told which of the two this is.
-          if (!hasToday && App.instance.period.isCurrentMonth) ...[
-            NoticeBox(S.noShiftsTodayInMonth, color: kPrimaryColor),
-            const SizedBox(height: 12),
-          ],
-          _DayBlock(
-            title: hasToday ? S.todayShifts : _dayTitle(leadDay!),
-            subtitle: hasToday ? _dayTitle(leadDay!) : null,
-            shifts: grouped[leadDay]!,
-            settings: widget.data.settings,
-            onChanged: widget.onChanged,
-          ),
-          if (rest.isNotEmpty) ...[
-            const SizedBox(height: 6),
-            ShowMoreButton(
-              expanded: _expanded,
-              label: _expanded ? S.hideOtherDays : S.showOtherDays(rest.length),
-              onPressed: () => setState(() => _expanded = !_expanded),
-            ),
-            if (_expanded) ...[
-              const SizedBox(height: 14),
-              for (final day in rest)
-                _DayBlock(
-                  title: _dayTitle(day),
-                  shifts: grouped[day]!,
-                  settings: widget.data.settings,
-                  onChanged: widget.onChanged,
+    return RefreshIndicator(
+      color: kPrimaryColor,
+      onRefresh: () async => widget.onChanged(),
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 4, 16, 28),
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: [
+          if (sorted.isEmpty)
+            CardBox(
+              child: Text(
+                S.noShifts,
+                style: const TextStyle(
+                  fontFamily: gilroyRegular,
+                  fontSize: 15,
+                  color: kMutedColor,
                 ),
+              ),
+            )
+          else ...[
+            for (final day in week)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: DayRow(day: day, onReturn: widget.onChanged),
+              ),
+            if (older.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              ShowMoreButton(
+                expanded: _expanded,
+                label: _expanded
+                    ? S.hideOtherDays
+                    : S.showOtherDays(older.length),
+                onPressed: () => setState(() => _expanded = !_expanded),
+              ),
+              if (_expanded) ...[
+                const SizedBox(height: 14),
+                for (final day in older)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: DayRow(day: day, onReturn: widget.onChanged),
+                  ),
+              ],
             ],
           ],
         ],
-      ],
+      ),
     );
   }
-
-  static String _dayTitle(String dayKey) {
-    final parsed = Ashgabat.parseDate(dayKey);
-    return parsed == null ? dayKey : Ashgabat.dayLabel(parsed);
-  }
 }
 
-/// One calendar day and the shifts under it.
-class _DayBlock extends StatelessWidget {
-  const _DayBlock({
-    required this.title,
-    required this.shifts,
-    required this.settings,
-    required this.onChanged,
-    this.subtitle,
-  });
+class _OutstandingTab extends StatelessWidget {
+  const _OutstandingTab({required this.outstanding, required this.onChanged});
 
-  final String title;
-  final String? subtitle;
-  final List<ShiftSummary> shifts;
-  final AccountingSettings? settings;
-  final VoidCallback onChanged;
-
-  @override
-  Widget build(BuildContext context) => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(top: 2, bottom: 10),
-            child: Row(
-              children: [
-                const AppIcon(AppIcons.day, size: 17),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: const TextStyle(
-                          fontFamily: gilroyBold,
-                          fontSize: 15,
-                          color: kBlackColor,
-                        ),
-                      ),
-                      if (subtitle != null)
-                        Text(
-                          subtitle!,
-                          style: const TextStyle(
-                            fontFamily: gilroyRegular,
-                            fontSize: 11.5,
-                            color: kMutedColor,
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          for (final shift in shifts)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: ShiftCard(
-                shift: shift,
-                settings: settings,
-                onChanged: onChanged,
-              ),
-            ),
-        ],
-      );
-}
-
-/// One shift, reduced to what a glance needs: which shift, whether the money
-/// is settled, how much is owed, and the one action available.
-///
-/// The packet's authors, notes and record count live on the shift's own
-/// screen — a list that repeats them is slower to read, not richer.
-class ShiftCard extends StatelessWidget {
-  const ShiftCard({
-    super.key,
-    required this.shift,
-    required this.settings,
-    required this.onChanged,
-  });
-
-  final ShiftSummary shift;
-  final AccountingSettings? settings;
-
-  /// Called after a packet changes, so the shifts, the report and the
-  /// journal are all re-read rather than patched locally.
+  final _Outstanding outstanding;
   final VoidCallback onChanged;
 
   @override
   Widget build(BuildContext context) {
-    final handoff = shift.handoff;
-    ShiftDefinition? definition;
-    for (final item in settings?.shifts ?? const <ShiftDefinition>[]) {
-      if (item.slot == shift.slot) {
-        definition = item;
-        break;
-      }
-    }
-    final name = shift.name ?? settings?.nameFor(shift.slot) ?? Labels.shiftSlot(shift.slot);
-    final start = Ashgabat.timeLabel(shift.startsAt);
-    final end = Ashgabat.timeLabel(shift.endsAt);
-    final window = start != null && end != null ? '$start – $end' : ((definition?.window ?? '').isEmpty ? null : definition!.window);
-    final discrepancy = handoff?.discrepancy;
-
-    return CardBox(
-      padding: const EdgeInsets.all(14),
-      onTap: () => Navigator.of(context).push(
-        MaterialPageRoute<void>(
-          builder: (_) => ShiftDetailPage(shift: shift, shiftName: name),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    final waiting = outstanding.waiting;
+    final unhanded = outstanding.unhanded;
+    return RefreshIndicator(
+      color: kPrimaryColor,
+      onRefresh: () async => onChanged(),
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 4, 16, 28),
+        physics: const AlwaysScrollableScrollPhysics(),
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const AppIconBadge(AppIcons.shifts, size: 38),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontFamily: gilroySemiBold,
-                        fontSize: 15,
-                        color: kBlackColor,
-                      ),
-                    ),
-                    if (window != null)
-                      Text(
-                        window,
-                        style: const TextStyle(
-                          fontFamily: gilroyRegular,
-                          fontSize: 12,
-                          color: kMutedColor,
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              Pill(
-                Labels.handoffStatus(handoff?.status),
-                color: Labels.handoffStatusColor(handoff?.status),
-              ),
-            ],
-          ),
-          const Divider(height: 18, color: kBorderColor),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      S.expected,
-                      style: const TextStyle(
-                        fontFamily: gilroyRegular,
-                        fontSize: 12,
-                        color: kMutedColor,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      Fmt.money(shift.expectedAmount),
-                      style: const TextStyle(
-                        fontFamily: gilroyBold,
-                        fontSize: 18,
-                        color: kBlackColor,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Text(
-                '${S.collectedInShift} ${Fmt.money(shift.collectedAmount)}'
-                '\n${Fmt.count(shift.orderCount)} · ${S.ordersCount}',
-                textAlign: TextAlign.right,
+          if (waiting.isEmpty && unhanded.isEmpty)
+            CardBox(
+              child: Text(
+                S.nothingOutstanding,
                 style: const TextStyle(
-                  fontFamily: gilroyMedium,
-                  fontSize: 11.5,
+                  fontFamily: gilroyRegular,
+                  fontSize: 15,
                   color: kMutedColor,
                 ),
               ),
-            ],
+            ),
+          if (waiting.isNotEmpty) ...[
+            _Heading(S.awaitingConfirmation, count: waiting.length),
+            // The money is accepted on the day's own screen, so these are
+            // ways in, not buttons: a list that is also a row of confirm
+            // buttons is one mis-tap from accepting the wrong day.
+            for (final day in waiting)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: DayRow(
+                  day: day,
+                  amount: day.pending.fold<double>(
+                    0,
+                    (sum, packet) =>
+                        sum +
+                        (packet.declaredAmount ?? packet.expectedAmount ?? 0),
+                  ),
+                  pillText: Labels.handoffStatus('SUBMITTED'),
+                  pillColor: Labels.handoffStatusColor('SUBMITTED'),
+                  onReturn: onChanged,
+                ),
+              ),
+            const SizedBox(height: 12),
+          ],
+          if (unhanded.isNotEmpty) ...[
+            _Heading(S.notHandedOver, count: unhanded.length),
+            for (final day in unhanded)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: DayRow(
+                  day: day,
+                  amount: day.availableAmount,
+                  onReturn: onChanged,
+                ),
+              ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _Heading extends StatelessWidget {
+  const _Heading(this.text, {this.count});
+
+  final String text;
+  final int? count;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(bottom: 10, top: 2),
+        child: Text(
+          count == null ? text : '$text · $count',
+          style: const TextStyle(
+            fontFamily: gilroyBold,
+            fontSize: 18,
+            color: kBlackColor,
           ),
-          // Only worth a line when it is not zero: a matching packet needs no
-          // commentary.
-          if (discrepancy != null && discrepancy != 0) ...[
-            const SizedBox(height: 8),
-            Pill(
-              '${S.discrepancy}: ${Fmt.signedMoney(discrepancy)}',
-              color: discrepancy < 0 ? kNegativeColor : kWarningColor,
-              icon: AppIcons.warning,
-            ),
-          ],
-          // Inline null check so the packet promotes to non-null below.
-          if (handoff != null && !handoff.isConfirmed) ...[
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              height: 42,
-              child: FilledButton.icon(
-                style: FilledButton.styleFrom(
-                  backgroundColor: kPositiveColor,
-                  shape: const RoundedRectangleBorder(borderRadius: borderRadius10),
-                ),
-                onPressed: () => confirmHandoff(
-                  context,
-                  handoff: handoff,
-                  onDone: onChanged,
-                ),
-                icon: const AppIcon(AppIcons.confirmed, size: 17, color: Colors.white),
-                label: Text(
-                  S.confirmAmount,
+        ),
+      );
+}
+
+/// One day as one line: its date, where its money stands, and its amount.
+class DayRow extends StatelessWidget {
+  const DayRow({
+    super.key,
+    required this.day,
+    this.amount,
+    this.pillText,
+    this.pillColor,
+    this.onReturn,
+  });
+
+  final CashDay day;
+
+  /// The figure to print instead of the day's total — for the list of days
+  /// whose money has not been handed over, where what matters is what is
+  /// still outside any packet.
+  final double? amount;
+
+  /// A caption in place of the day's own state — «Ждёт подтверждения» in the
+  /// queue, where the day's state may say something broader.
+  final String? pillText;
+  final Color? pillColor;
+
+  /// Called when the day's screen is closed, so a packet accepted there is
+  /// gone from this list instead of waiting for a manual refresh.
+  final VoidCallback? onReturn;
+
+  @override
+  Widget build(BuildContext context) {
+    final date = Ashgabat.parseDate(day.dayKey);
+    final isToday = day.dayKey == Ashgabat.date(Ashgabat.now());
+    final label = date == null ? day.dayKey : Ashgabat.dayLabel(date);
+    return CardBox(
+      padding: const EdgeInsets.all(16),
+      onTap: () async {
+        await Navigator.of(context).push(
+          MaterialPageRoute<void>(builder: (_) => DayDetailPage(day: day)),
+        );
+        onReturn?.call();
+      },
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  isToday ? '${S.todayDay} · $label' : label,
                   style: const TextStyle(
                     fontFamily: gilroySemiBold,
-                    color: Colors.white,
+                    fontSize: 16,
+                    color: kBlackColor,
                   ),
                 ),
-              ),
+                const SizedBox(height: 8),
+                Pill(
+                  pillText ?? Labels.dayState(day.state),
+                  color: pillColor ?? Labels.dayStateColor(day.state),
+                ),
+              ],
             ),
-          ] else if (handoff == null && App.instance.auth.role.canCreateHandoff) ...[
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              height: 42,
-              child: OutlinedButton.icon(
-                style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: kBorderColor),
-                  shape: const RoundedRectangleBorder(borderRadius: borderRadius10),
-                ),
-                onPressed: () => createHandoff(
-                  context,
-                  shift: shift,
-                  onDone: onChanged,
-                ),
-                icon: const AppIcon(AppIcons.handoff, size: 17),
-                label: Text(
-                  S.createPacket,
-                  style: const TextStyle(
-                    fontFamily: gilroySemiBold,
-                    color: kPrimaryColor,
-                  ),
-                ),
-              ),
+          ),
+          const SizedBox(width: 10),
+          Text(
+            Fmt.money(amount ?? day.expectedAmount),
+            style: const TextStyle(
+              fontFamily: gilroyBold,
+              fontSize: 19,
+              color: kBlackColor,
             ),
-          ],
+          ),
+          const SizedBox(width: 6),
+          const AppIcon(AppIcons.forward, size: 18, color: kMutedColor),
         ],
       ),
     );

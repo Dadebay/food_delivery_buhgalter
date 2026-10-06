@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../constants/app_icons.dart';
 import '../constants/constants.dart';
+import 'action_words.dart';
 import 'formatting.dart';
 import 'strings.dart';
 
@@ -44,9 +45,9 @@ class Labels {
           'Işgärler boýunça sorag ret edildi',
         ),
         'cash_handoff.submitted':
-            _t('Деньги смены переданы', 'Çalşygyň puly tabşyryldy'),
+            _t('Деньги за день переданы', 'Güniň puly tabşyryldy'),
         'cash_handoff.confirmed':
-            _t('Деньги смены подтверждены', 'Çalşygyň puly tassyklandy'),
+            _t('Деньги за день подтверждены', 'Güniň puly tassyklandy'),
         'order.historical-cash-reconciled': _t(
           'Отмечена ранее сданная оплата',
           'Öň tabşyrylan töleg bellenildi',
@@ -66,11 +67,38 @@ class Labels {
     if (action != null && action.endsWith('.request.rejected')) {
       return _t('Запрос отклонён', 'Sorag ret edildi');
     }
+    // `address.activated`, `product.created`, … — translated half by half.
+    final composed = ActionWords.describe(action);
+    if (composed != null) return composed;
+    // The section is known but the verb is not: say which section changed.
+    final noun = ActionWords.entity(ActionWords.entityKey(action));
+    if (noun != null) return '$noun: ${_t('изменение', 'üýtgeşme')}';
     return _t('Изменение записи', 'Ýazgynyň üýtgemegi');
   }
 
   static bool isKnownAction(String? action) =>
-      action != null && auditActions.containsKey(action);
+      action != null &&
+      (auditActions.containsKey(action) ||
+          ActionWords.describe(action) != null);
+
+  /// The colour an event reads in: red for what removes or refuses, green
+  /// for what adds or approves, orange for a hand-over, indigo otherwise.
+  static Color auditColor(String? action) {
+    if (action == null) return kPrimaryColor;
+    if (action.endsWith('.rejected') || action.endsWith('.cancelled')) {
+      return kNegativeColor;
+    }
+    if (action.startsWith('cash_handoff.submitted') ||
+        action == 'order.transitioned') {
+      return kWarningColor;
+    }
+    if (ActionWords.isNegative(action)) return kNegativeColor;
+    if (ActionWords.isPositive(action) ||
+        action == 'cash_handoff.confirmed') {
+      return kPositiveColor;
+    }
+    return kPrimaryColor;
+  }
 
   static Map<String, String> get entities => {
         'ORDER': _t('Заказ', 'Sargyt'),
@@ -87,10 +115,13 @@ class Labels {
         'SETTINGS': _t('Настройки', 'Sazlamalar'),
         'STOCK': _t('Склад', 'Ammar'),
         'TARIFF': _t('Тариф', 'Nyrh'),
+        ...ActionWords.entityNames,
       };
 
   static String entity(String? type) =>
-      entities[(type ?? '').toUpperCase()] ?? (type ?? kDash);
+      entities[(type ?? '').toUpperCase()] ??
+      ActionWords.entity(type) ??
+      (type ?? kDash);
 
   /// Field names inside a before/after comparison. Unknown keys keep their
   /// raw name so nothing is silently dropped.
@@ -124,9 +155,99 @@ class Labels {
         'isActive': _t('Активно', 'Işjeň'),
         'declaredAmount': _t('Заявленная сумма', 'Yglan edilen möçber'),
         'expectedAmount': _t('Ожидаемая сумма', 'Garaşylýan möçber'),
+        'title': _t('Название', 'Ady'),
+        'description': _t('Описание', 'Düşündiriş'),
+        'phone': _t('Телефон', 'Telefon'),
+        'email': _t('Почта', 'E-poçta'),
+        'firstName': _t('Имя', 'Ady'),
+        'lastName': _t('Фамилия', 'Familiýasy'),
+        'role': _t('Роль', 'Wezipe'),
+        'code': _t('Код', 'Kod'),
+        'street': _t('Улица', 'Köçe'),
+        'house': _t('Дом', 'Jaý'),
+        'city': _t('Город', 'Şäher'),
+        'district': _t('Район', 'Etrap'),
+        'latitude': _t('Широта', 'Giňlik'),
+        'longitude': _t('Долгота', 'Uzaklyk'),
+        'isDefault': _t('Основной', 'Esasy'),
+        'isBlocked': _t('Заблокирован', 'Bloklanan'),
+        'isAvailable': _t('Доступно', 'Elýeterli'),
+        'active': _t('Активно', 'Işjeň'),
+        'image': _t('Фото', 'Surat'),
+        'imageUrl': _t('Фото', 'Surat'),
+        'photo': _t('Фото', 'Surat'),
+        'sortOrder': _t('Порядок', 'Tertip'),
+        'position': _t('Порядок', 'Tertip'),
+        'quantity': _t('Количество', 'Sany'),
+        'amount': _t('Сумма', 'Möçber'),
+        'percent': _t('Процент', 'Göterim'),
+        'discountPercent': _t('Скидка, %', 'Arzanladyş, %'),
+        'startsAt': _t('Начало', 'Başlangyç'),
+        'endsAt': _t('Конец', 'Soňy'),
+        'startDate': _t('Начало', 'Başlangyç'),
+        'endDate': _t('Конец', 'Soňy'),
+        'categoryId': _t('Категория', 'Kategoriýa'),
+        'categoryName': _t('Категория', 'Kategoriýa'),
+        'productName': _t('Блюдо', 'Tagam'),
+        'variantName': _t('Вариант', 'Görnüş'),
+        'type': _t('Тип', 'Görnüşi'),
+        'language': _t('Язык', 'Dil'),
+        'deliveryAddress': _t('Адрес доставки', 'Eltip bermek salgysy'),
+        'cookingTime': _t('Время приготовления', 'Taýýarlanyş wagty'),
+        'version': _t('Версия', 'Wersiýa'),
+        'addressLandmark': _t('Ориентир', 'Nyşan'),
+        'landmark': _t('Ориентир', 'Nyşan'),
+        'addressLocationStatus':
+            _t('Статус геопозиции', 'Ýerleşiş ýagdaýy'),
+        'locationStatus': _t('Статус геопозиции', 'Ýerleşiş ýagdaýy'),
+        'addressLatitude': _t('Широта', 'Giňlik'),
+        'addressLongitude': _t('Долгота', 'Uzaklyk'),
+        'addressText': _t('Адрес', 'Salgy'),
+        'addressNote': _t('Комментарий к адресу', 'Salgy barada bellik'),
       };
 
-  static String field(String key) => fields[key] ?? key;
+  /// A saved field name in words. An exact caption wins; a trailing `Id` is
+  /// dropped so `branchId`-style keys find their noun; anything still unknown
+  /// keeps its raw name rather than being guessed at.
+  static String field(String key) {
+    final exact = fields[key];
+    if (exact != null) return exact;
+    if (key.length > 2 && key.endsWith('Id')) {
+      final base = fields[key.substring(0, key.length - 2)];
+      if (base != null) return base;
+    }
+    // `addressEntrance`, `addressFloor`, … — the same field, prefixed with
+    // the section it belongs to.
+    if (key.length > 7 && key.startsWith('address')) {
+      final rest = key.substring(7);
+      final base = fields['${rest[0].toLowerCase()}${rest.substring(1)}'];
+      if (base != null) return base;
+    }
+    return key;
+  }
+
+  /// A saved value that is a status-like word, in the reader's language.
+  static String? valueWord(String value) => switch (value.toUpperCase()) {
+        'ACTIVE' => _t('Активно', 'Işjeň'),
+        'INACTIVE' => _t('Неактивно', 'Işjeň däl'),
+        'ENABLED' => _t('Включено', 'Açyk'),
+        'DISABLED' => _t('Отключено', 'Öçük'),
+        'BLOCKED' => _t('Заблокировано', 'Bloklanan'),
+        'ARCHIVED' => _t('В архиве', 'Arhiwde'),
+        'DRAFT' => _t('Черновик', 'Garalama'),
+        'PUBLISHED' => _t('Опубликовано', 'Çap edildi'),
+        'GPS' => _t('По GPS', 'GPS boýunça'),
+        'MANUAL' => _t('Вручную', 'Elde'),
+        'UNKNOWN' => _t('Неизвестно', 'Näbelli'),
+        'NOT_SET' || 'NONE' => _t('Не указано', 'Görkezilmedi'),
+        'VERIFIED' || 'CONFIRMED' => _t('Подтверждено', 'Tassyklandy'),
+        'UNVERIFIED' => _t('Не подтверждено', 'Tassyklanmady'),
+        'APPROXIMATE' => _t('Приблизительно', 'Takmynan'),
+        'EXACT' => _t('Точно', 'Takyk'),
+        'TRUE' => S.yes,
+        'FALSE' => S.no,
+        _ => null,
+      };
 
   static Map<String, String> get orderStatuses => {
         'NEW': _t('Новый', 'Täze'),
@@ -137,7 +258,7 @@ class Labels {
         'ASSIGNED_TO_COURIER': _t('Назначен курьеру', 'Kurýere berildi'),
         'OUT_FOR_DELIVERY': _t('В доставке', 'Ýolda'),
         'DELIVERED': _t('Доставлен', 'Eltildi'),
-        'CASH_RETURNED': _t('Деньги возвращены', 'Pul gaýtaryldy'),
+        'CASH_RETURNED': _t('Деньги получены', 'Puly alnan'),
         'RECONCILED': _t('Сверен', 'Deňeşdirilen'),
         'CANCELLED': _t('Отменён', 'Ýatyryldy'),
       };
@@ -157,7 +278,7 @@ class Labels {
 
   static Map<String, String> get handoffStatuses => {
         'SUBMITTED': _t('Ждёт подтверждения', 'Tassyklanmaga garaşýar'),
-        'CONFIRMED': _t('Подтверждён', 'Tassyklandy'),
+        'CONFIRMED': _t('Принято', 'Kabul edildi'),
         'PENDING': _t('Не передан', 'Tabşyrylmadyk'),
         'REJECTED': _t('Отклонён', 'Ret edildi'),
       };
@@ -184,13 +305,23 @@ class Labels {
     return auditActions[action] ?? action;
   }
 
-  /// `first`/`second` when the settings have not been read yet. The real
-  /// names and times come from `GET /accounting/settings`; 09:30/19:00 is
-  /// never baked into the app.
-  static String shiftSlot(String slot) => switch (slot) {
-        'first' => S.firstShift,
-        'second' => S.secondShift,
-        _ => S.shift,
+  /// The state of a whole day card, as `/accounting/days` reports it.
+  static String dayState(String? state) =>
+      switch ((state ?? '').toUpperCase()) {
+        'OPEN' => _t('День идёт', 'Gün dowam edýär'),
+        'EMPTY' => _t('Денег нет', 'Pul ýok'),
+        'READY' => _t('Можно сдать', 'Tabşyrmaga taýyn'),
+        'SUBMITTED' => _t('Ждёт подтверждения', 'Tassyklanmaga garaşýar'),
+        'CONFIRMED' => _t('Принято', 'Kabul edildi'),
+        _ => state == null || state.isEmpty ? kDash : state,
+      };
+
+  static Color dayStateColor(String? state) =>
+      switch ((state ?? '').toUpperCase()) {
+        'CONFIRMED' => kPositiveColor,
+        'SUBMITTED' => kWarningColor,
+        'READY' => kPrimaryColor,
+        _ => kMutedColor,
       };
 
   static String orderSource(String? source) =>
@@ -215,10 +346,30 @@ class Labels {
         'order.historical-cash-reconciled' ||
         'order.historical-completion-requested' =>
           AppIcons.history,
-        _ => (action ?? '').endsWith('.request.rejected')
-            ? AppIcons.cancelled
-            : AppIcons.details,
+        _ => _genericIcon(action),
       };
+
+  /// For an event the app has no exact icon for: the section it belongs to if
+  /// that has a recognisable glyph, otherwise what happened to it.
+  static List<List<dynamic>> _genericIcon(String? action) {
+    if ((action ?? '').endsWith('.request.rejected')) return AppIcons.cancelled;
+    switch (ActionWords.entityKey(action)) {
+      case 'address' || 'customer_address' || 'district' || 'etrap':
+        return AppIcons.address;
+      case 'product' || 'dish' || 'variant' || 'menu' || 'category':
+        return AppIcons.dish;
+      case 'branch' || 'kitchen':
+        return AppIcons.branch;
+      case 'courier':
+        return AppIcons.courier;
+      case 'user' || 'users' || 'staff' || 'employee' || 'customer':
+        return AppIcons.person;
+    }
+    if (ActionWords.isNegative(action)) return AppIcons.cancelled;
+    if (ActionWords.isEdit(action)) return AppIcons.edited;
+    if (ActionWords.isPositive(action)) return AppIcons.confirmed;
+    return AppIcons.details;
+  }
 
   /// Normalises a server key so `cash_returned`, `CASH-RETURNED` and
   /// «Cash Returned» all find the same caption.
@@ -238,8 +389,8 @@ class Labels {
         'NOT_RETURNED': _t('Деньги не вернули', 'Pul gaýtarylmady'),
         'WITH_COURIER': _t('У курьера', 'Kurýerde'),
         'WITH_OPERATOR': _t('У оператора', 'Operatorda'),
-        'RETURNED': _t('Деньги вернули', 'Pul gaýtaryldy'),
-        'CASH_RETURNED': _t('Деньги вернули', 'Pul gaýtaryldy'),
+        'RETURNED': _t('Деньги получены', 'Puly alnan'),
+        'CASH_RETURNED': _t('Деньги получены', 'Puly alnan'),
         'COLLECTED': _t('Получено', 'Alyndy'),
         'SUBMITTED': _t('Передано в пакете', 'Bukjada tabşyryldy'),
         'HANDED_OVER': _t('Передано в пакете', 'Bukjada tabşyryldy'),

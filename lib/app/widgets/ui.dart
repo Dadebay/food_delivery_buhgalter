@@ -544,9 +544,17 @@ class SegmentedTabBar extends StatelessWidget implements PreferredSizeWidget {
           isScrollable: false,
           padding: EdgeInsets.zero,
           labelPadding: const EdgeInsets.symmetric(horizontal: 4),
-          indicator: const BoxDecoration(
+          indicator: BoxDecoration(
             color: kPrimaryColor,
             borderRadius: borderRadius30,
+            boxShadow: [
+              BoxShadow(
+                // ignore: deprecated_member_use
+                color: kPrimaryColor.withOpacity(0.35),
+                blurRadius: 8,
+                offset: const Offset(0, 3),
+              ),
+            ],
           ),
           indicatorSize: TabBarIndicatorSize.tab,
           dividerColor: Colors.transparent,

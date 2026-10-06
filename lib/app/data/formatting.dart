@@ -40,6 +40,11 @@ class Fmt {
     return '${NumberFormat('#,##0.#', 'ru').format(value)} %';
   }
 
+  /// A share already measured in percent (0–100), printed as it is. Unlike
+  /// [percent] it never guesses whether the number was a fraction.
+  static String percentValue(double value) =>
+      '${NumberFormat('#,##0.#', 'ru').format(value)} %';
+
   /// `preparationMinutes` is 0…1440 and 520 is a legal value: it is printed
   /// in full, never clamped back to the old 240 ceiling.
   static String minutes(int? value) {

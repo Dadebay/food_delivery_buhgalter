@@ -122,8 +122,15 @@ class _AuditPageState extends State<AuditPage> {
                 ),
               ],
             ),
-            const SizedBox(height: 10),
-            NoticeBox(S.journalNote, color: kPrimaryColor),
+            const SizedBox(height: 8),
+            Text(
+              S.journalNote,
+              style: const TextStyle(
+                fontFamily: gilroyRegular,
+                fontSize: 11.5,
+                color: kMutedColor,
+              ),
+            ),
           ],
         ),
       );

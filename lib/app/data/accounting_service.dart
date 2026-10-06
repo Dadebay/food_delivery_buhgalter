@@ -1,5 +1,6 @@
 import '../constants/constants.dart';
 import 'api_client.dart';
+import 'ashgabat_time.dart';
 import 'models/audit.dart';
 import 'models/carryover.dart';
 import 'models/order.dart';
@@ -21,7 +22,7 @@ extension OrderBasisValue on OrderBasis {
 
 /// A period to ask about: either a calendar range or one shift.
 ///
-/// `/report` and `/shifts` take **only** calendar dates; the rest accept
+/// `/report` and `/days` take **only** calendar dates; the rest accept
 /// either. Keeping both in one object is what stops a shift key from being
 /// sent to an endpoint that cannot read it.
 class Period {
@@ -36,7 +37,7 @@ class Period {
   /// `2026-09-30`, inclusive.
   final String? toDate;
 
-  /// `2026-09-27:first`
+  /// `2026-09-27:day`
   final String? shiftKey;
 
   bool get isShift => shiftKey != null;
@@ -56,30 +57,26 @@ class AccountingService {
 
   final ApiClient _api;
 
-  Future<AccountingSettings> settings() async =>
-      AccountingSettings.fromJson(await _api.get('accounting/settings'));
-
-  /// Shifts of a calendar range, with what each owes and its money packet.
-  /// Calendar dates only.
-  Future<List<ShiftSummary>> shifts({
+  /// One card per calendar day, 00:00–00:00 in Ashgabat, with what the day
+  /// owes and every money packet that belongs to it. Calendar dates only.
+  Future<List<CashDay>> days({
     required String fromDate,
     required String toDate,
   }) async {
     final data = await _api.get(
-      'accounting/shifts',
+      'accounting/days',
       query: {'fromDate': fromDate, 'toDate': toDate},
     );
-    final raw = data is Map<String, dynamic> ? data['items'] ?? data['shifts'] : data;
+    final raw = data is Map<String, dynamic> ? data['items'] ?? data['days'] : data;
     if (raw is! List) return const [];
     return raw
         .whereType<Map<String, dynamic>>()
-        .map(ShiftSummary.fromJson)
+        .map(CashDay.fromJson)
         .toList();
   }
 
-  /// Money returned in a calendar range. Calendar dates only — a whole day's
-  /// report must never be labelled as one shift's takings; those come from
-  /// the matching entry of [shifts].
+  /// Money returned in a calendar range. Calendar dates only — the figures of
+  /// one day come from the matching entry of [days].
   Future<AccountingReport> report({
     required String fromDate,
     required String toDate,
@@ -88,6 +85,27 @@ class AccountingService {
         'accounting/report',
         query: {'fromDate': fromDate, 'toDate': toDate},
       ));
+
+  /// Money returned in each month of [year], keyed by month number. One
+  /// range call for the whole year (the API allows 366 days): the `daily`
+  /// rows are the money records by the day they were returned, so a month's
+  /// figure is simply their sum. A month with no row is a zero, a failed
+  /// request is an exception and is never shown as zero.
+  Future<Map<int, double>> monthlyTotals(int year) async {
+    final now = Ashgabat.now();
+    final last = year >= now.year ? now : DateTime(year, 12, 31);
+    final data = await report(
+      fromDate: '$year-01-01',
+      toDate: Ashgabat.date(last),
+    );
+    final totals = {for (var m = 1; m <= 12; m++) m: 0.0};
+    for (final day in data.daily) {
+      final parsed = DateTime.tryParse(day.date);
+      if (parsed == null || parsed.year != year) continue;
+      totals[parsed.month] = totals[parsed.month]! + (day.amount ?? 0);
+    }
+    return totals;
+  }
 
   /// Demand, cancellations and edits. Takes a shift key or a calendar range.
   Future<AccountingOverview> overview(Period period) async =>
@@ -217,8 +235,8 @@ class AccountingService {
         body: {'status': 'CASH_RETURNED', 'version': version},
       );
 
-  /// A month, built from the three range calls the spec prescribes. There is
-  /// no `/monthly`; the rest of the pages load when their section is opened
+  /// A month, built from the two range calls the charts need. There is no
+  /// `/monthly`; the rest of the pages load when their section is opened
   /// rather than being downloaded to build charts.
   Future<MonthBundle> month({
     required String fromDate,
@@ -227,24 +245,17 @@ class AccountingService {
     final results = await Future.wait([
       overview(Period.range(fromDate, toDate)),
       report(fromDate: fromDate, toDate: toDate),
-      shifts(fromDate: fromDate, toDate: toDate),
     ]);
     return MonthBundle(
       overview: results[0] as AccountingOverview,
       report: results[1] as AccountingReport,
-      shifts: results[2] as List<ShiftSummary>,
     );
   }
 }
 
 class MonthBundle {
-  const MonthBundle({
-    required this.overview,
-    required this.report,
-    required this.shifts,
-  });
+  const MonthBundle({required this.overview, required this.report});
 
   final AccountingOverview overview;
   final AccountingReport report;
-  final List<ShiftSummary> shifts;
 }

@@ -37,6 +37,12 @@ const String appName = 'Бухгалтерия';
 const int kPageSize = 25;
 const int kMaxPageSize = 100;
 
+/// How far back the app looks for money that is still owed — packets waiting
+/// for the accountant and finished days nobody has handed over. It is a
+/// display window, not a rule: older ones exist, they just stop being listed
+/// on the home page and at the top of «Касса за день».
+const int kArrearsLookbackDays = 90;
+
 /// The longest range the API accepts in one call.
 const int kMaxRangeDays = 366;
 

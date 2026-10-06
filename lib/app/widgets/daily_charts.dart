@@ -66,7 +66,7 @@ List<DayPoint> alignMoney(DateTime month, List<DailyMoney> daily) {
 }
 
 /// Orders and cancellations per day. Tapping a column opens that day's
-/// orders by creation time.
+/// orders by creation time; touching one shows its numbers.
 class DailyOrdersChart extends StatelessWidget {
   const DailyOrdersChart({
     super.key,
@@ -81,8 +81,15 @@ class DailyOrdersChart extends StatelessWidget {
   Widget build(BuildContext context) {
     final maxValue = points.fold<double>(
         0, (best, point) => point.primary > best ? point.primary : best);
+    final peak = _peak(points);
     return _ChartFrame(
       title: S.chartOrders,
+      icon: AppIcons.orders,
+      accent: kPrimaryColor,
+      highlight: peak == null || peak.primary <= 0
+          ? null
+          : '${S.peakDay}: ${Ashgabat.shortDay(peak.day)} · '
+              '${Fmt.count(peak.primary.round())}',
       legend: [
         _Legend(color: kPrimaryColor, label: S.legendCreated),
         _Legend(color: kNegativeColor, label: S.legendCancelled),
@@ -96,6 +103,26 @@ class DailyOrdersChart extends StatelessWidget {
           titlesData: _titles(points, (value) => Fmt.count(value.round())),
           barTouchData: BarTouchData(
             enabled: true,
+            touchTooltipData: BarTouchTooltipData(
+              getTooltipColor: (_) => kBlackColor,
+              fitInsideHorizontally: true,
+              fitInsideVertically: true,
+              getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                if (rodIndex != 0) return null;
+                final point = points[groupIndex];
+                return BarTooltipItem(
+                  '${Ashgabat.shortDay(point.day)}\n'
+                  '${S.legendCreated}: ${Fmt.count(point.primary.round())}\n'
+                  '${S.legendCancelled}: ${Fmt.count(point.secondary.round())}',
+                  const TextStyle(
+                    fontFamily: gilroyMedium,
+                    fontSize: 11.5,
+                    color: Colors.white,
+                    height: 1.35,
+                  ),
+                );
+              },
+            ),
             touchCallback: (event, response) {
               if (event is! FlTapUpEvent) return;
               final spot = response?.spot;
@@ -114,14 +141,16 @@ class DailyOrdersChart extends StatelessWidget {
                   BarChartRodData(
                     toY: points[i].primary,
                     color: kPrimaryColor,
-                    width: 4,
-                    borderRadius: BorderRadius.circular(2),
+                    width: 4.5,
+                    borderRadius:
+                        const BorderRadius.vertical(top: Radius.circular(3)),
                   ),
                   BarChartRodData(
                     toY: points[i].secondary,
                     color: kNegativeColor,
-                    width: 4,
-                    borderRadius: BorderRadius.circular(2),
+                    width: 4.5,
+                    borderRadius:
+                        const BorderRadius.vertical(top: Radius.circular(3)),
                   ),
                 ],
               ),
@@ -148,8 +177,16 @@ class DailyMoneyChart extends StatelessWidget {
   Widget build(BuildContext context) {
     final maxValue = points.fold<double>(
         0, (best, point) => point.primary > best ? point.primary : best);
+    final peak = _peak(points);
+    final peakIndex = peak == null ? -1 : points.indexOf(peak);
     return _ChartFrame(
       title: S.chartMoney,
+      icon: AppIcons.money,
+      accent: kPositiveColor,
+      highlight: peak == null || peak.primary <= 0
+          ? null
+          : '${S.bestDay}: ${Ashgabat.shortDay(peak.day)} · '
+              '${Fmt.money(peak.primary)}',
       legend: [_Legend(color: kPositiveColor, label: S.legendReceived)],
       footnote: S.chartZeroNote,
       child: LineChart(
@@ -161,6 +198,24 @@ class DailyMoneyChart extends StatelessWidget {
           titlesData: _titles(points, _shortMoney, reserved: 48),
           lineTouchData: LineTouchData(
             enabled: true,
+            touchTooltipData: LineTouchTooltipData(
+              getTooltipColor: (_) => kBlackColor,
+              fitInsideHorizontally: true,
+              fitInsideVertically: true,
+              getTooltipItems: (spots) => [
+                for (final spot in spots)
+                  LineTooltipItem(
+                    '${Ashgabat.shortDay(points[spot.spotIndex].day)}\n'
+                    '${Fmt.money(points[spot.spotIndex].primary)}',
+                    const TextStyle(
+                      fontFamily: gilroyMedium,
+                      fontSize: 11.5,
+                      color: Colors.white,
+                      height: 1.35,
+                    ),
+                  ),
+              ],
+            ),
             touchCallback: (event, response) {
               if (event is! FlTapUpEvent) return;
               final spots = response?.lineBarSpots;
@@ -176,14 +231,36 @@ class DailyMoneyChart extends StatelessWidget {
                 for (var i = 0; i < points.length; i++)
                   FlSpot(i.toDouble(), points[i].primary),
               ],
-              isCurved: false,
+              isCurved: true,
+              curveSmoothness: 0.2,
+              preventCurveOverShooting: true,
               color: kPositiveColor,
-              barWidth: 2,
-              dotData: const FlDotData(show: false),
+              barWidth: 2.5,
+              isStrokeCapRound: true,
+              dotData: FlDotData(
+                show: true,
+                checkToShowDot: (spot, _) =>
+                    spot.x.round() == peakIndex && spot.y > 0,
+                getDotPainter: (spot, percent, bar, index) =>
+                    FlDotCirclePainter(
+                  radius: 4.5,
+                  color: Colors.white,
+                  strokeWidth: 2.5,
+                  strokeColor: kPositiveColor,
+                ),
+              ),
               belowBarData: BarAreaData(
                 show: true,
-                // ignore: deprecated_member_use
-                color: kPositiveColor.withOpacity(0.12),
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    // ignore: deprecated_member_use
+                    kPositiveColor.withOpacity(0.28),
+                    // ignore: deprecated_member_use
+                    kPositiveColor.withOpacity(0.02),
+                  ],
+                ),
               ),
             ),
           ],
@@ -200,11 +277,21 @@ class DailyMoneyChart extends StatelessWidget {
   }
 }
 
+/// The day with the highest primary value — a reading of the rows the server
+/// sent, not a figure of its own.
+DayPoint? _peak(List<DayPoint> points) {
+  DayPoint? best;
+  for (final point in points) {
+    if (best == null || point.primary > best.primary) best = point;
+  }
+  return best;
+}
+
 FlGridData _grid() => FlGridData(
       show: true,
       drawVerticalLine: false,
       getDrawingHorizontalLine: (_) =>
-          const FlLine(color: kBorderColor, strokeWidth: 1),
+          const FlLine(color: kBorderColor, strokeWidth: 1, dashArray: [4, 4]),
     );
 
 FlTitlesData _titles(
@@ -266,25 +353,35 @@ FlTitlesData _titles(
 class _ChartFrame extends StatelessWidget {
   const _ChartFrame({
     required this.title,
+    required this.icon,
+    required this.accent,
     required this.child,
     required this.legend,
+    this.highlight,
     this.footnote,
   });
 
   final String title;
+  final List<List<dynamic>> icon;
+  final Color accent;
   final Widget child;
   final List<Widget> legend;
+
+  /// One line that says where the chart peaks, so the answer is readable
+  /// without touching the chart.
+  final String? highlight;
   final String? footnote;
 
   @override
   Widget build(BuildContext context) => CardBox(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                const AppIcon(AppIcons.charts, size: 17),
-                const SizedBox(width: 8),
+                AppIconBadge(icon, color: accent, size: 34),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Text(
                     title,
@@ -297,11 +394,31 @@ class _ChartFrame extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 4),
+            if (highlight != null) ...[
+              const SizedBox(height: 10),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  // ignore: deprecated_member_use
+                  color: accent.withOpacity(0.08),
+                  borderRadius: borderRadius10,
+                ),
+                child: Text(
+                  highlight!,
+                  style: TextStyle(
+                    fontFamily: gilroySemiBold,
+                    fontSize: 12,
+                    color: accent,
+                  ),
+                ),
+              ),
+            ],
+            const SizedBox(height: 10),
             Wrap(spacing: 14, runSpacing: 4, children: legend),
             const SizedBox(height: 14),
-            SizedBox(height: 190, child: child),
-            const SizedBox(height: 8),
+            SizedBox(height: 210, child: child),
+            const SizedBox(height: 10),
             Text(
               S.chartTapHint,
               style: const TextStyle(

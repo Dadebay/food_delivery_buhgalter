@@ -43,6 +43,8 @@ class ReportSummary {
     this.outstandingAmount,
     this.declaredHandoffAmount,
     this.handoffDiscrepancy,
+    this.completedOrders,
+    this.averageOrderAmount,
   });
 
   final double? collectedAmount;
@@ -59,6 +61,12 @@ class ReportSummary {
   /// It is not a system fee and not evidence that the notes were recounted.
   final double? handoffDiscrepancy;
 
+  /// Money records in the period, as the server counts them.
+  final int? completedOrders;
+
+  /// Average food amount of those records, the server's own figure.
+  final double? averageOrderAmount;
+
   factory ReportSummary.fromJson(dynamic json) {
     if (json is! Map<String, dynamic>) return const ReportSummary();
     return ReportSummary(
@@ -68,6 +76,8 @@ class ReportSummary {
       outstandingAmount: asDouble(json['outstandingAmount']),
       declaredHandoffAmount: asDouble(json['declaredHandoffAmount']),
       handoffDiscrepancy: asDouble(json['handoffDiscrepancy']),
+      completedOrders: asInt(json['completedOrders']),
+      averageOrderAmount: asDouble(json['averageOrderAmount']),
     );
   }
 }

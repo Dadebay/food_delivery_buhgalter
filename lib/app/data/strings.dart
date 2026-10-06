@@ -89,8 +89,8 @@ class S {
 
   // ── Login ─────────────────────────────────────────────────────────────
   static String get loginSubtitle => _t(
-        'Просмотр смен, денег и журнала действий.',
-        'Çalşyklara, pula we hereketler žurnalyna syn.',
+        'Просмотр дней, денег и журнала действий.',
+        'Günlere, pula we hereketler žurnalyna syn.',
       );
   static String get loginAccessNote => _t(
         'Раздел открыт бухгалтеру и владельцу.',
@@ -119,18 +119,24 @@ class S {
         'Aşgabat wagty, UTC+5.',
       );
   static String get today => _t('Сегодня', 'Şu gün');
+  static String yearTotal(int year) =>
+      _t('Заработано за $year год', '$year ýylda gazanylan');
+  static String get monthEarnedHint => _t(
+        'Деньги за еду по дню возврата, без доставки.',
+        'Iýmit puly gaýdan güni boýunça, eltip bermesiz.',
+      );
+  static String get monthEarned => _t('Заработано за месяц', 'Aýda gazanylan');
   static String get todayToCollect =>
       _t('Сегодня нужно сдать', 'Şu gün tabşyrmaly');
   static String get todayCollected => _t('Уже получено', 'Eýýäm alyndy');
   static String get todayRemaining => _t('Осталось', 'Galan');
   static String get todayNoShifts =>
-      _t('На сегодня смен нет', 'Şu güne çalşyk ýok');
+      _t('За сегодня данных нет', 'Şu gün üçin maglumat ýok');
   static String get overdueTitle =>
       _t('Остаток за прошлые дни', 'Öňki günlerden galan');
-  static String overdueShiftsCount(int count) => _t(
-        'Неподтверждённых смен: $count',
-        'Tassyklanmadyk çalşyk: $count',
-      );
+  static String packetsCount(int count) =>
+      _t('Пакетов: $count', 'Bukja: $count');
+  static String daysCount(int count) => _t('Дней: $count', 'Gün: $count');
   static String get account => _t('Учётная запись', 'Hasap');
   static String get staff => _t('Сотрудник', 'Işgär');
   static String get role => _t('Роль', 'Wezipe');
@@ -155,10 +161,10 @@ class S {
         'По созданию и по возврату денег',
         'Döredilişi we pul gaýdyşy boýunça',
       );
-  static String get shiftsMoney => _t('Смены и деньги', 'Çalşyklar we pul');
+  static String get shiftsMoney => _t('Касса за день', 'Günüň kassasy');
   static String get shiftsMoneySub => _t(
-        'Суммы к сдаче и переданные пакеты',
-        'Tabşyrylmaly möçberler we bukjalar',
+        'Суммы за день, сдача денег и подтверждение',
+        'Günüň möçberleri, pul tabşyrmak we tassyklamak',
       );
   static String get charts => _t('Графики', 'Grafikler');
   static String get chartsSub => _t(
@@ -169,12 +175,12 @@ class S {
   static String get journalSub =>
       _t('История и контроль действий', 'Taryh we hereketlere gözegçilik');
   static String get carryIn =>
-      _t('Принято от смены', 'Çalşykdan kabul edilen');
+      _t('Принято с прошлого дня', 'Öňki günden kabul edilen');
   static String get carryInSub => _t(
         'Незавершённые заказы на входе',
         'Girişdäki tamamlanmadyk sargytlar',
       );
-  static String get carryOut => _t('Передано смене', 'Çalşyga geçirilen');
+  static String get carryOut => _t('Передано на следующий день', 'Indiki güne geçirilen');
   static String get carryOutSub => _t(
         'Незавершённые заказы на выходе',
         'Çykyşdaky tamamlanmadyk sargytlar',
@@ -200,8 +206,9 @@ class S {
       );
   static String get status => _t('Статус', 'Ýagdaý');
   static String get allStatuses => _t('Все статусы', 'Ähli ýagdaýlar');
+  static String get allStatusesShort => _t('Все', 'Hemmesi');
   static String get created => _t('Создан', 'Döredildi');
-  static String get cashReturned => _t('Деньги вернули', 'Pul gaýtaryldy');
+  static String get cashReturned => _t('Деньги получены', 'Puly alnan');
   static String get dateUnknown => _t('дата неизвестна', 'senesi näbelli');
   static String get customer => _t('Клиент', 'Müşderi');
   static String get kitchen => _t('Кухня', 'Aşhana');
@@ -280,9 +287,9 @@ class S {
   static String get cashPacket => _t('Денежный пакет', 'Pul bukjasy');
   static String get handoverUnknownNote => _t(
         'Сверено; дата сдачи неизвестна. Такая запись не попадает ни в '
-            'сегодняшнюю смену, ни в денежный график по времени сверки.',
+            'сегодняшний день, ни в денежный график по времени сверки.',
         'Deňeşdirildi; tabşyrylan senesi näbelli. Beýle ýazgy ne şu günki '
-            'çalşyga, ne-de pul grafigine düşýär.',
+            'güne, ne-de pul grafigine düşýär.',
       );
   static String get historyNote => _t(
         'История заказа показывается целиком и не зависит от выбранного '
@@ -300,13 +307,35 @@ class S {
       _t('$price за штуку', 'birligi $price');
 
   // ── Shifts ────────────────────────────────────────────────────────────
-  static String get shift => _t('Смена', 'Çalşyk');
-  static String get firstShift => _t('Первая смена', 'Birinji çalşyk');
-  static String get secondShift => _t('Вторая смена', 'Ikinji çalşyk');
+  static String get day => _t('День', 'Gün');
+  static String get waitForHandoff => _t(
+        'Администратор ещё не сдал эти деньги. Кнопка «Я принял деньги» '
+            'появится, когда он их сдаст.',
+        'Administrator bu puly entek tabşyrmady. Ol tabşyranda «Tölegi aldym» '
+            'düwmesi peýda bolar.',
+      );
+  static String get receiveDayTitle =>
+      _t('Принять деньги за день', 'Gün üçin puly kabul et');
+  static String get receiveDayNote => _t(
+        'Деньги будут сданы и сразу приняты одним действием.',
+        'Pul tabşyrylar we derrew kabul ediler.',
+      );
+  static String get allDays => _t('Все дни', 'Ähli günler');
+  static String get nothingOutstanding => _t(
+        'Всё передано и принято.',
+        'Hemmesi tabşyryldy we kabul edildi.',
+      );
+  static String get thisWeek => _t('Эта неделя', 'Şu hepde');
+  static String get lastDays => _t('Последние дни', 'Soňky günler');
+  static String get difference => _t('Разница', 'Tapawut');
+  static String get moneyOfDay => _t('Деньги за день', 'Gün puly');
+  static String get handedBy => _t('Сдал', 'Tabşyran');
+  static String get acceptedBy => _t('Принял', 'Kabul eden');
+  static String get wholeDay => _t('За день', 'Gün boýunça');
   static String get noShifts =>
-      _t('За выбранный месяц смен нет.', 'Saýlanan aýda çalşyk ýok.');
+      _t('За выбранный месяц данных нет.', 'Saýlanan aýda maglumat ýok.');
   static String get ordersCount => _t('Заказов', 'Sargyt');
-  static String get collectedInShift => _t('Получено', 'Alnan');
+  static String get collectedInShift => _t('Всего за день', 'Gün boýunça jemi');
   static String get expected => _t('К сдаче', 'Tabşyrmaly');
   static String get declared => _t('Заявлено', 'Yglan edilen');
   static String get discrepancy => _t('Расхождение', 'Tapawut');
@@ -320,11 +349,43 @@ class S {
   static String get recordsInPacket => _t('Записей в пакете', 'Bukjadaky ýazgy');
   static String get confirmAmount =>
       _t('Я принял деньги', 'Tölegi aldym');
-  static String get createPacket => _t('Создать пакет', 'Bukja döret');
+  static String get createPacket => _t('Сдать деньги за день', 'Gün üçin pul tabşyr');
   static String get confirmPacketTitle =>
-      _t('Подтвердить сумму пакета', 'Bukjanyň möçberini tassykla');
+      _t('Подтвердить получение денег', 'Pulyň alnandygyny tassykla');
+  static String get confirmReceipt =>
+      _t('Подтвердить получение', 'Alnandygyny tassykla');
+  static String get periodLabel => _t('Период', 'Döwür');
+  static String get packetAuthorNote =>
+      _t('Комментарий при сдаче', 'Tabşyranyň bellik');
+  static String get accountantNote =>
+      _t('Комментарий бухгалтера', 'Buhgalteriň bellik');
+  static String get shortfall => _t('Недостача', 'Kemçilik');
+  static String get surplus => _t('Излишек', 'Artykmaçlyk');
+  static String get availableToHandOver =>
+      _t('Не передано', 'Tabşyrylmadyk');
+  static String get recordsOfDay => _t('Записей', 'Ýazgy');
+  static String get previouslyHandedOver =>
+      _t('Ранее передано', 'Öň tabşyrylan');
+  static String get dayPacket => _t('Пакет дня', 'Güniň bukjasy');
+  static String get awaitingConfirmation =>
+      _t('Ожидают подтверждения', 'Tassyklanmaga garaşýar');
+  static String get notHandedOver => _t('Не передано', 'Tabşyrylmadyk');
+  static String get dayStillOpen => _t(
+        'День ещё идёт: сдать деньги можно после полуночи по Ашхабаду.',
+        'Gün entek dowam edýär: pul Aşgabat ýarym gijesinden soň tabşyrylýar.',
+      );
+  static String get declaredAmountError => _t(
+        'Сумма — число от 0 до 99 999 999, не больше двух знаков после запятой.',
+        'Möçber — 0-dan 99 999 999-a çenli san, nokatdan soň iň köp iki belgi.',
+      );
+  static String get createPacketNote => _t(
+        'Сервер сам включит все подходящие денежные записи дня. Если сумму не '
+            'указать, будет взята ожидаемая.',
+        'Serweriň özi güniň ähli degişli pul ýazgylaryny goşar. Möçber '
+            'görkezilmese, garaşylýan alnar.',
+      );
   static String get createPacketTitle =>
-      _t('Создать денежный пакет', 'Pul bukjasyny döret');
+      _t('Сдать деньги бухгалтеру', 'Pulu buhgaltere tabşyr');
   static String get expectedAmount => _t('Ожидаемая сумма', 'Garaşylýan möçber');
   static String get records => _t('Записей', 'Ýazgy');
   static String get noteOptional =>
@@ -337,9 +398,8 @@ class S {
       _t('Пакет подтверждён', 'Bukja tassyklandy');
   static String get packetCreated => _t('Пакет создан', 'Bukja döredildi');
   static String get confirmNote => _t(
-        'Заказы переводит в «Сверен» сервер для состава этого пакета.',
-        'Sargytlary «Deňeşdirilen» ýagdaýyna bu bukjanyň düzümi üçin serwer '
-            'geçirýär.',
+        'Разница не мешает подтвердить.',
+        'Tapawut tassyklamaga päsgel bermeýär.',
       );
   static String get checkPacketFirst => _t(
         'Сначала проверьте фактическое состояние пакета — операция могла '
@@ -348,23 +408,23 @@ class S {
       );
   static String get packetNotCreated =>
       _t('Пакет не создан', 'Bukja döredilmedi');
-  static String get shiftOrders => _t('Заказы смены', 'Çalşygyň sargytlary');
+  static String get shiftOrders => _t('Заказы дня', 'Güniň sargytlary');
   static String get openSection => _t('Открыть', 'Aç');
   static String get ordersByCreation =>
       _t('Заказы по созданию', 'Döredilişi boýunça sargytlar');
   static String get ordersByCreationSub => _t(
-        'Что заказали в эту смену',
-        'Bu çalşykda näme sargyt edildi',
+        'Что заказали в этот день',
+        'Şu gün näme sargyt edildi',
       );
   static String get moneyOfShift =>
-      _t('Деньги, вернувшиеся в смену', 'Çalşyga gaýdan pul');
+      _t('Деньги, вернувшиеся за день', 'Gün içinde gaýdan pul');
   static String get moneyOfShiftSub => _t(
-        'Для сданного пакета — его состав',
-        'Tabşyrylan bukja üçin — onuň düzümi',
+        'Заказы по этой сумме',
+        'Şu möçber boýunça sargytlar',
       );
-  static String get shiftJournal => _t('Журнал смены', 'Çalşygyň žurnaly');
+  static String get shiftJournal => _t('Журнал дня', 'Güniň žurnaly');
   static String get shiftActions =>
-      _t('Действия в течение смены', 'Çalşygyň dowamyndaky hereketler');
+      _t('Действия в течение дня', 'Güniň dowamyndaky hereketler');
   static String get dishDemand => _t('Спрос на блюда', 'Tagamlara isleg');
 
   // ── Month / charts ────────────────────────────────────────────────────
@@ -389,8 +449,8 @@ class S {
       );
   static String get editEvents => _t('Редактирований', 'Üýtgetmeler');
   static String get editEventsHint => _t(
-        'в том числе заказов прошлых смен',
-        'öňki çalşyklaryň sargytlary hem',
+        'в том числе заказов прошлых дней',
+        'öňki günleriň sargytlary hem',
       );
   static String get received => _t('Получено', 'Alnan');
   static String get handedOver => _t('Передано', 'Tabşyrylan');
@@ -399,8 +459,8 @@ class S {
   static String get declaredByPackets =>
       _t('Заявлено пакетами', 'Bukjalar boýunça yglan');
   static String get declaredByPacketsHint => _t(
-        'пакеты смен, начавшихся в периоде',
-        'döwürde başlan çalşyklaryň bukjalary',
+        'пакеты, период которых начался в этих датах',
+        'döwri şu senelerde başlan bukjalar',
       );
   static String get discrepancyHint =>
       _t('заявлено минус ожидаемое', 'yglan minus garaşylýan');
@@ -410,6 +470,12 @@ class S {
         'Tapawut ulgamyň komissiýasy däl we puluň hakykatdan sanalandygynyň '
             'subutnamasy däl.',
       );
+  static String get checkName => _t('Чеки', 'Çek');
+  static String get bestDay => _t('Лучший день', 'Iň gowy gün');
+  static String get peakDay => _t('Пик', 'Iň ýokary');
+  static String get otherLabel => _t('Другие', 'Beýlekiler');
+  static String get shareOfTotal => _t('Доля', 'Paý');
+  static String get cancelledBar => _t('Отменено', 'Ýatyrylan');
   static String get districts => _t('Районы', 'Etraplar');
   static String get kitchens => _t('Кухни', 'Aşhanalar');
   static String get cancelReasons =>
@@ -524,7 +590,10 @@ class S {
         'Araçäkdäki surat saklanmandyr — bu sargydyň taryhy düzümini we '
             'möçberini görkezip bolmaýar.',
       );
-  static String get atBoundary => _t('На границе смены', 'Çalşygyň araçäginde');
+  static String get atBoundary => _t('На границе дня', 'Güniň araçäginde');
+  static String get wasLabel => _t('Было', 'Ozal');
+  static String get nowLabel => _t('Сейчас', 'Häzir');
+  static String get unchanged => _t('Без изменений', 'Üýtgemedi');
   static String get itemsCount => _t('Позиций', 'Haryt sany');
   static String get currentDiffersNote => _t(
         'Текущие значения заказа могут отличаться — они показаны в карточке '
@@ -570,10 +639,10 @@ class S {
       );
 
   // ── Today / show more ─────────────────────────────────────────────────
-  static String get todayShifts => _t('Смены сегодня', 'Şu günki çalşyklar');
-  static String get noShiftsTodayInMonth => _t(
-        'Сегодня смен ещё нет. Откройте остальные дни месяца.',
-        'Şu güne çalşyk heniz ýok. Aýyň beýleki günlerini açyň.',
+  static String get todayDay => _t('Сегодня', 'Şu gün');
+  static String get noDaysTodayInMonth => _t(
+        'За сегодня данных ещё нет. Откройте остальные дни месяца.',
+        'Şu gün üçin entek maglumat ýok. Aýyň beýleki günlerini açyň.',
       );
   static String get earlierDays => _t('Прошлые дни', 'Öňki günler');
   static String showOtherDays(int count) =>

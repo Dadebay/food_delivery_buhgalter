@@ -11,11 +11,13 @@ import '../../data/models/audit.dart';
 import '../../data/strings.dart';
 import '../../widgets/ui.dart';
 
-/// One line of «Кто что сделал».
+/// One line of «Кто что сделал»: what happened, who did it, and when.
 ///
-/// The main line reads **action → order № → who → when → what changed**, and
-/// tapping it opens the before/after comparison. An event with no order
-/// leaves the number out rather than drawing «Заказ №null».
+/// The colour of the badge says what kind of event it was (green adds or
+/// approves, red removes or refuses, orange hands over), so a long list can
+/// be read by colour first. Tapping a row opens the before/after comparison.
+/// An event with no order leaves the number out rather than drawing
+/// «Заказ №null».
 class AuditTile extends StatelessWidget {
   const AuditTile({
     super.key,
@@ -31,9 +33,13 @@ class AuditTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final when = Ashgabat.dateTimeLabel(entry.createdAt);
+    final created = entry.createdAt;
+    final local = created == null ? null : Ashgabat.toLocal(created);
     final actor = entry.actor?.fullName;
+    final color = Labels.auditColor(entry.action);
+    final fields = entry.hasComparison ? entry.changedFields : const <String>[];
     return CardBox(
+      padding: const EdgeInsets.all(14),
       onTap: () => showAuditDetails(context, entry, onOpenOrder: onOpenOrder),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -41,7 +47,8 @@ class AuditTile extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              AppIconBadge(Labels.auditIcon(entry.action), size: 38),
+              AppIconBadge(Labels.auditIcon(entry.action),
+                  color: color, size: 42),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -51,42 +58,31 @@ class AuditTile extends StatelessWidget {
                       Labels.auditAction(entry.action),
                       style: const TextStyle(
                         fontFamily: gilroySemiBold,
-                        fontSize: 14.5,
+                        fontSize: 15,
+                        height: 1.2,
                         color: kBlackColor,
                       ),
                     ),
-                    const SizedBox(height: 3),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 4,
-                      crossAxisAlignment: WrapCrossAlignment.center,
+                    const SizedBox(height: 5),
+                    Row(
                       children: [
-                        if (entry.orderNumber != null)
-                          Text(
-                            Fmt.orderNumber(entry.orderNumber),
-                            style: const TextStyle(
-                              fontFamily: gilroySemiBold,
-                              fontSize: 12.5,
-                              color: kPrimaryColor,
+                        const AppIcon(AppIcons.person,
+                            size: 14, color: kMutedColor),
+                        const SizedBox(width: 5),
+                        Expanded(
+                          child: Text(
+                            // A rejected request often has no author saved
+                            // at all; saying so beats a bare "unknown" that
+                            // reads like a missing name.
+                            actor ?? S.authorNotRecorded,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontFamily:
+                                  actor == null ? gilroyRegular : gilroyMedium,
+                              fontSize: 13,
+                              color: actor == null ? kMutedColor : kBlackColor,
                             ),
-                          ),
-                        Text(
-                          // A rejected request often has no author saved at
-                          // all; saying so beats a bare "unknown" that reads
-                          // like a missing name.
-                          actor ?? S.authorNotRecorded,
-                          style: TextStyle(
-                            fontFamily: actor == null ? gilroyRegular : gilroyMedium,
-                            fontSize: 12.5,
-                            color: actor == null ? kMutedColor : kBlackColor,
-                          ),
-                        ),
-                        Text(
-                          when ?? kUnknown,
-                          style: const TextStyle(
-                            fontFamily: gilroyRegular,
-                            fontSize: 12,
-                            color: kMutedColor,
                           ),
                         ),
                       ],
@@ -94,41 +90,146 @@ class AuditTile extends StatelessWidget {
                   ],
                 ),
               ),
-              const AppIcon(AppIcons.forward, size: 16, color: kMutedColor),
+              const SizedBox(width: 8),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    Ashgabat.timeLabel(created) ?? kDash,
+                    style: const TextStyle(
+                      fontFamily: gilroyBold,
+                      fontSize: 14,
+                      color: kBlackColor,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    local == null ? '' : Ashgabat.shortDay(local),
+                    style: const TextStyle(
+                      fontFamily: gilroyRegular,
+                      fontSize: 12,
+                      color: kMutedColor,
+                    ),
+                  ),
+                ],
+              ),
             ],
           ),
-          if (entry.hasComparison) ...[
-            const SizedBox(height: 8),
-            Text(
-              S.changedFields(entry.changedFields.map(Labels.field).join(', ')),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontFamily: gilroyRegular,
-                fontSize: 12,
-                color: kMutedColor,
-              ),
+          if (entry.orderNumber != null || fields.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                if (entry.orderNumber != null)
+                  Pill(
+                    Fmt.orderNumber(entry.orderNumber),
+                    color: kPrimaryColor,
+                    icon: AppIcons.orders,
+                  ),
+                for (final field in fields.take(3))
+                  Pill(Labels.field(field), color: kMutedColor),
+                if (fields.length > 3)
+                  Pill('+${fields.length - 3}', color: kMutedColor),
+              ],
             ),
-          ] else if (!Labels.isKnownAction(entry.action)) ...[
-            const SizedBox(height: 8),
-            // The raw event code, kept visible but clearly technical, so an
-            // action this build does not know is never silently dropped.
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: kSurfaceColor,
-                borderRadius: borderRadius10,
-              ),
-              child: Text(
-                entry.action ?? kUnknown,
-                style: const TextStyle(
-                  fontFamily: 'monospace',
-                  fontSize: 11,
-                  color: kMutedColor,
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// One event of an order's own history, drawn on a vertical timeline: a
+/// coloured dot per event, joined by a line, newest at the top. Reads like
+/// the order's story rather than like a table of log rows.
+class AuditTimelineTile extends StatelessWidget {
+  const AuditTimelineTile({super.key, required this.entry});
+
+  final AuditEntry entry;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = Labels.auditColor(entry.action);
+    final actor = entry.actor?.fullName ?? S.authorNotRecorded;
+    final fields = entry.hasComparison ? entry.changedFields : const <String>[];
+    final when = Ashgabat.dateTimeLabel(entry.createdAt) ?? kUnknown;
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SizedBox(
+            width: 38,
+            child: Column(
+              children: [
+                Container(
+                  width: 34,
+                  height: 34,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    // ignore: deprecated_member_use
+                    color: color.withOpacity(0.14),
+                    shape: BoxShape.circle,
+                  ),
+                  child: AppIcon(Labels.auditIcon(entry.action),
+                      size: 17, color: color),
+                ),
+                Expanded(
+                  child: Container(
+                    width: 2,
+                    margin: const EdgeInsets.symmetric(vertical: 4),
+                    color: kBorderColor,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: InkWell(
+              onTap: () => showAuditDetails(context, entry),
+              borderRadius: borderRadius10,
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 18, top: 2),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      Labels.auditAction(entry.action),
+                      style: const TextStyle(
+                        fontFamily: gilroySemiBold,
+                        fontSize: 15,
+                        height: 1.2,
+                        color: kBlackColor,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      '$actor · $when',
+                      style: const TextStyle(
+                        fontFamily: gilroyRegular,
+                        fontSize: 12.5,
+                        color: kMutedColor,
+                      ),
+                    ),
+                    if (fields.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: [
+                          for (final field in fields.take(4))
+                            Pill(Labels.field(field), color: kMutedColor),
+                          if (fields.length > 4)
+                            Pill('+${fields.length - 4}', color: kMutedColor),
+                        ],
+                      ),
+                    ],
+                  ],
                 ),
               ),
             ),
-          ],
+          ),
         ],
       ),
     );
@@ -316,7 +417,7 @@ class _AuditDetails extends StatelessWidget {
         if (value is Map || value is List) {
           return const JsonEncoder.withIndent('  ').convert(value);
         }
-        return value.toString();
+        return Labels.valueWord(value.toString()) ?? value.toString();
     }
   }
 }
