@@ -28,15 +28,24 @@ class Paged<T> {
     dynamic json,
     T Function(Map<String, dynamic>) item,
   ) {
-    if (json is! Map<String, dynamic>) return Paged<T>.empty();
+    if (json is! Map<String, dynamic>) {
+      throw const FormatException('Invalid paged response');
+    }
     final raw = json['items'];
+    final total = asInt(json['total']);
+    final page = asInt(json['page']);
+    final limit = asInt(json['limit']);
+    if (raw is! List || total == null || page == null || limit == null) {
+      throw const FormatException('Incomplete paged response');
+    }
+    if (raw.any((value) => value is! Map<String, dynamic>)) {
+      throw const FormatException('Invalid paged items');
+    }
     return Paged<T>(
-      items: raw is List
-          ? raw.whereType<Map<String, dynamic>>().map(item).toList()
-          : const [],
-      total: (json['total'] as num?)?.toInt() ?? 0,
-      page: (json['page'] as num?)?.toInt() ?? 1,
-      limit: (json['limit'] as num?)?.toInt() ?? 25,
+      items: raw.cast<Map<String, dynamic>>().map(item).toList(),
+      total: total,
+      page: page,
+      limit: limit,
     );
   }
 

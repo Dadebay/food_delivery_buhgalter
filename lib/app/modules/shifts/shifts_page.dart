@@ -115,9 +115,7 @@ class _CashTabs extends StatelessWidget {
           SegmentedTabBar(
             tabs: [
               SegmentTab(
-                App.instance.period.isCurrentMonth
-                    ? S.thisWeek
-                    : S.lastDays,
+                App.instance.period.isCurrentMonth ? S.thisWeek : S.lastDays,
                 icon: AppIcons.day,
               ),
               SegmentTab(
@@ -154,9 +152,10 @@ class _Outstanding {
   final List<CashDay> unhanded;
 
   /// Distinct days, so a day that is both is counted once.
-  int get count =>
-      {...waiting.map((d) => d.shiftKey), ...unhanded.map((d) => d.shiftKey)}
-          .length;
+  int get count => {
+        ...waiting.map((d) => d.shiftKey),
+        ...unhanded.map((d) => d.shiftKey)
+      }.length;
 
   factory _Outstanding.of(_CashData data) {
     final today = Ashgabat.date(Ashgabat.now());
@@ -229,9 +228,8 @@ class _WeekTabState extends State<_WeekTab> {
               const SizedBox(height: 4),
               ShowMoreButton(
                 expanded: _expanded,
-                label: _expanded
-                    ? S.hideOtherDays
-                    : S.showOtherDays(older.length),
+                label:
+                    _expanded ? S.hideOtherDays : S.showOtherDays(older.length),
                 onPressed: () => setState(() => _expanded = !_expanded),
               ),
               if (_expanded) ...[

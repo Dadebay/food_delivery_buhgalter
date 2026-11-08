@@ -1,21 +1,17 @@
 name: accounting_app
 version: 1.0.0+1
 publish_to: none
-description: Bухгалтерия — смены, месяц и контроль действий (read-only oversight client).
+description: A7-TAGAM Accountant — mobile oversight of cash days, orders, and audit events.
 environment:
   sdk: ">=3.3.0 <4.0.0"
 
 dependencies:
   flutter:
     sdk: flutter
-  cupertino_icons: ^1.0.6
-  # Same stack as the SMS gateway app this was branched from: GetX for
-  # routing/state, get_storage for the session, plain http for the API.
-  get: 4.6.6
+  # Session and language preferences are stored locally; the API uses HTTP.
   get_storage: any
   http: ^1.2.2
   hugeicons: ^1.1.7
-  iconly: any
   lottie:
   # Charts are a first-class section of this app ("Графики"), and the daily
   # series come straight from the API.

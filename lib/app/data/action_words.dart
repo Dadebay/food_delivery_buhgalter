@@ -44,13 +44,16 @@ class ActionWords {
           if (entry.value.listed) entry.key.toUpperCase(): entry.value.name,
       };
 
-  static bool isNegative(String? code) => _verbKey(code).let(_negative.contains);
-  static bool isPositive(String? code) => _verbKey(code).let(_positive.contains);
+  static bool isNegative(String? code) =>
+      _verbKey(code).let(_negative.contains);
+  static bool isPositive(String? code) =>
+      _verbKey(code).let(_positive.contains);
   static bool isEdit(String? code) => _verbKey(code).let(_edits.contains);
 
   static String? entityKey(String? code) {
     if (code == null) return null;
-    final list = code.toLowerCase().split('.').where((p) => p.isNotEmpty).toList();
+    final list =
+        code.toLowerCase().split('.').where((p) => p.isNotEmpty).toList();
     if (list.length < 2) return null;
     final joined = _norm(list.sublist(0, list.length - 1).join('_'));
     if (_entities.containsKey(joined)) return joined;
@@ -69,16 +72,39 @@ class ActionWords {
       value.toLowerCase().replaceAll('-', '_').replaceAll(' ', '_');
 
   static const _negative = {
-    'deleted', 'removed', 'cancelled', 'canceled', 'rejected', 'blocked',
-    'deactivated', 'disabled', 'archived', 'refunded',
+    'deleted',
+    'removed',
+    'cancelled',
+    'canceled',
+    'rejected',
+    'blocked',
+    'deactivated',
+    'disabled',
+    'archived',
+    'refunded',
   };
   static const _positive = {
-    'created', 'added', 'activated', 'enabled', 'confirmed', 'approved',
-    'accepted', 'assigned', 'restored', 'published', 'completed', 'paid',
+    'created',
+    'added',
+    'activated',
+    'enabled',
+    'confirmed',
+    'approved',
+    'accepted',
+    'assigned',
+    'restored',
+    'published',
+    'completed',
+    'paid',
   };
   static const _edits = {
-    'updated', 'edited', 'changed', 'status_changed', 'price_changed',
-    'reordered', 'sort_changed',
+    'updated',
+    'edited',
+    'changed',
+    'status_changed',
+    'price_changed',
+    'reordered',
+    'sort_changed',
   };
 
   static const Map<String, _Noun> _entities = {
@@ -170,16 +196,13 @@ class ActionWords {
     'requested': _Verb('запрошен', 'soraldy'),
     'opened': _Verb('открыт', 'açyldy'),
     'closed': _Verb('закрыт', 'ýapyldy'),
-    'status_changed':
-        _Verb.phrase('статус изменён', 'ýagdaýy üýtgedildi'),
+    'status_changed': _Verb.phrase('статус изменён', 'ýagdaýy üýtgedildi'),
     'price_changed': _Verb.phrase('цена изменена', 'bahasy üýtgedildi'),
     'reordered': _Verb.phrase('порядок изменён', 'tertibi üýtgedildi'),
     'sort_changed': _Verb.phrase('порядок изменён', 'tertibi üýtgedildi'),
-    'password_changed':
-        _Verb.phrase('пароль изменён', 'parol üýtgedildi'),
+    'password_changed': _Verb.phrase('пароль изменён', 'parol üýtgedildi'),
     'role_changed': _Verb.phrase('роль изменена', 'wezipesi üýtgedildi'),
-    'set_default':
-        _Verb.phrase('выбран основным', 'esasy edip saýlandy'),
+    'set_default': _Verb.phrase('выбран основным', 'esasy edip saýlandy'),
   };
 }
 
@@ -220,7 +243,6 @@ class _Verb {
       _ => 'ы',
     };
     return '$stem$ending';
-
   }
 }
 

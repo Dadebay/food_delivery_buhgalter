@@ -60,7 +60,8 @@ android {
 
     buildTypes {
         release {
-            signingConfig = signingConfigs.debug
+            // Release signing is configured only with the app's private key.
+            // A debug-signed build must never be distributed as a release.
         }
     }
 }

@@ -1,7 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:accounting_app/app/data/models/shift.dart';
 
-Map<String, dynamic> packet(String id, String status, {String key = '2026-10-04:day'}) => {
+Map<String, dynamic> packet(String id, String status,
+        {String key = '2026-10-04:day'}) =>
+    {
       'id': id,
       'shiftKey': key,
       'status': status,

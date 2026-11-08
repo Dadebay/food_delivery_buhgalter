@@ -37,20 +37,27 @@ class OrderSummary {
   /// a historically reconciled order whose real hand-over date is unknown.
   final DateTime? cashReturnedAt;
 
-  factory OrderSummary.fromJson(Map<String, dynamic> json) => OrderSummary(
-        id: (json['id'] ?? '').toString(),
-        number: asInt(json['number']),
-        status: json['status'] as String?,
-        createdAt: DateTime.tryParse(json['createdAt'] as String? ?? ''),
-        customerName: json['customerName'] as String?,
-        branchName: json['branchName'] as String?,
-        deliveryEtrapName: json['deliveryEtrapName'] as String?,
-        foodAmount: asDouble(json['foodAmount']),
-        deliveryFee: asDouble(json['deliveryFee']),
-        total: asDouble(json['total']),
-        cashReturnedAt:
-            DateTime.tryParse(json['operatorTakenAt'] as String? ?? json['cashReturnedAt'] as String? ?? ''),
-      );
+  factory OrderSummary.fromJson(Map<String, dynamic> json) {
+    final id = json['id'];
+    if (id is! String || id.isEmpty) {
+      throw const FormatException('Missing order id');
+    }
+    return OrderSummary(
+      id: id,
+      number: asInt(json['number']),
+      status: json['status'] as String?,
+      createdAt: DateTime.tryParse(json['createdAt'] as String? ?? ''),
+      customerName: json['customerName'] as String?,
+      branchName: json['branchName'] as String?,
+      deliveryEtrapName: json['deliveryEtrapName'] as String?,
+      foodAmount: asDouble(json['foodAmount']),
+      deliveryFee: asDouble(json['deliveryFee']),
+      total: asDouble(json['total']),
+      cashReturnedAt: DateTime.tryParse(json['operatorTakenAt'] as String? ??
+          json['cashReturnedAt'] as String? ??
+          ''),
+    );
+  }
 }
 
 /// `GET /accounting/orders/:id`.
@@ -147,14 +154,21 @@ class OrderDetail {
   final Settlement? settlement;
 
   factory OrderDetail.fromJson(dynamic json) {
-    final map = json is Map<String, dynamic> ? json : <String, dynamic>{};
+    if (json is! Map<String, dynamic>) {
+      throw const FormatException('Invalid order detail');
+    }
+    final map = json;
+    final id = map['id'];
+    if (id is! String || id.isEmpty) {
+      throw const FormatException('Missing order id');
+    }
     List<T> list<T>(String key, T Function(Map<String, dynamic>) item) =>
         (map[key] as List<dynamic>? ?? const [])
             .whereType<Map<String, dynamic>>()
             .map(item)
             .toList();
     return OrderDetail(
-      id: (map['id'] ?? '').toString(),
+      id: id,
       number: asInt(map['number']),
       status: map['status'] as String?,
       source: map['source'] as String?,
@@ -172,7 +186,9 @@ class OrderDetail {
       gifts: list('gifts', OrderGift.fromJson),
       loyaltyPointsEarned: asInt(map['loyaltyPointsEarned']),
       loyaltyPointsSpent: asInt(map['loyaltyPointsSpent']),
-      rating: asInt(map['rating'] is Map ? (map['rating'] as Map)['score'] : map['rating']),
+      rating: asInt(map['rating'] is Map
+          ? (map['rating'] as Map)['score']
+          : map['rating']),
       subtotal: asDouble(map['subtotal']),
       discount: asDouble(map['discount']),
       foodAmount: asDouble(map['foodAmount']),
@@ -233,7 +249,8 @@ class OrderLine {
 }
 
 class OrderGift {
-  const OrderGift({this.name, this.quantity, this.pointsCost, this.totalPoints});
+  const OrderGift(
+      {this.name, this.quantity, this.pointsCost, this.totalPoints});
 
   final String? name;
   final int? quantity;
@@ -282,7 +299,8 @@ class OrderTransition {
   final String? toStatus;
   final String? note;
 
-  factory OrderTransition.fromJson(Map<String, dynamic> json) => OrderTransition(
+  factory OrderTransition.fromJson(Map<String, dynamic> json) =>
+      OrderTransition(
         actor: Actor.fromJson(json['actor']),
         createdAt: DateTime.tryParse(json['createdAt'] as String? ?? ''),
         fromStatus: json['fromStatus'] as String?,

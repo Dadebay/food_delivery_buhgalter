@@ -23,15 +23,12 @@ class Labels {
             _t('Заказ создан в приложении', 'Sargyt programmada döredildi'),
         'order.created_by_staff':
             _t('Заказ оформлен по телефону', 'Sargyt telefon arkaly alyndy'),
-        'order.admin-edited':
-            _t('Заказ отредактирован', 'Sargyt üýtgedildi'),
+        'order.admin-edited': _t('Заказ отредактирован', 'Sargyt üýtgedildi'),
         'order.cancelled': _t('Заказ отменён', 'Sargyt ýatyryldy'),
         'order.packing-confirmed':
             _t('Сборка подтверждена', 'Ýygnalmagy tassyklandy'),
-        'order.courier-assigned':
-            _t('Курьер назначен', 'Kurýer bellenildi'),
-        'order.courier-reassigned':
-            _t('Курьер заменён', 'Kurýer çalşyryldy'),
+        'order.courier-assigned': _t('Курьер назначен', 'Kurýer bellenildi'),
+        'order.courier-reassigned': _t('Курьер заменён', 'Kurýer çalşyryldy'),
         'order.transitioned':
             _t('Статус заказа изменён', 'Sargydyň ýagdaýy üýtgedi'),
         'order.request.rejected':
@@ -93,8 +90,7 @@ class Labels {
       return kWarningColor;
     }
     if (ActionWords.isNegative(action)) return kNegativeColor;
-    if (ActionWords.isPositive(action) ||
-        action == 'cash_handoff.confirmed') {
+    if (ActionWords.isPositive(action) || action == 'cash_handoff.confirmed') {
       return kPositiveColor;
     }
     return kPrimaryColor;
@@ -148,8 +144,7 @@ class Labels {
         'branchName': _t('Кухня', 'Aşhana'),
         'branchId': _t('Кухня', 'Aşhana'),
         'deliveryEtrapName': _t('Район', 'Etrap'),
-        'preparationMinutes':
-            _t('Время приготовления', 'Taýýarlanyş wagty'),
+        'preparationMinutes': _t('Время приготовления', 'Taýýarlanyş wagty'),
         'name': _t('Название', 'Ady'),
         'price': _t('Цена', 'Bahasy'),
         'isActive': _t('Активно', 'Işjeň'),
@@ -197,8 +192,7 @@ class Labels {
         'version': _t('Версия', 'Wersiýa'),
         'addressLandmark': _t('Ориентир', 'Nyşan'),
         'landmark': _t('Ориентир', 'Nyşan'),
-        'addressLocationStatus':
-            _t('Статус геопозиции', 'Ýerleşiş ýagdaýy'),
+        'addressLocationStatus': _t('Статус геопозиции', 'Ýerleşiş ýagdaýy'),
         'locationStatus': _t('Статус геопозиции', 'Ýerleşiş ýagdaýy'),
         'addressLatitude': _t('Широта', 'Giňlik'),
         'addressLongitude': _t('Долгота', 'Uzaklyk'),
@@ -271,7 +265,10 @@ class Labels {
         'CANCELLED' => kNegativeColor,
         'RECONCILED' || 'CASH_RETURNED' => kPositiveColor,
         'DELIVERED' => kPrimaryColor,
-        'COOKING' || 'READY' || 'ASSIGNED_TO_COURIER' || 'OUT_FOR_DELIVERY' =>
+        'COOKING' ||
+        'READY' ||
+        'ASSIGNED_TO_COURIER' ||
+        'OUT_FOR_DELIVERY' =>
           kWarningColor,
         _ => kMutedColor,
       };
@@ -373,10 +370,8 @@ class Labels {
 
   /// Normalises a server key so `cash_returned`, `CASH-RETURNED` and
   /// «Cash Returned» all find the same caption.
-  static String _key(String? value) => (value ?? '')
-      .trim()
-      .toUpperCase()
-      .replaceAll(RegExp(r'[\s\-]+'), '_');
+  static String _key(String? value) =>
+      (value ?? '').trim().toUpperCase().replaceAll(RegExp(r'[\s\-]+'), '_');
 
   /// The money record's own state, as shown on an order.
   ///
@@ -408,13 +403,18 @@ class Labels {
         (status == null || status.trim().isEmpty ? kDash : status);
   }
 
-  static Color settlementStatusColor(String? status) =>
-      switch (_key(status)) {
-        'RECONCILED' || 'CONFIRMED' || 'RETURNED' || 'CASH_RETURNED' =>
+  static Color settlementStatusColor(String? status) => switch (_key(status)) {
+        'RECONCILED' ||
+        'CONFIRMED' ||
+        'RETURNED' ||
+        'CASH_RETURNED' =>
           kPositiveColor,
         'CANCELLED' || 'REFUNDED' || 'WRITTEN_OFF' => kNegativeColor,
         'SUBMITTED' || 'HANDED_OVER' || 'COLLECTED' => kPrimaryColor,
-        'PENDING' || 'NOT_RETURNED' || 'WITH_COURIER' || 'WITH_OPERATOR' =>
+        'PENDING' ||
+        'NOT_RETURNED' ||
+        'WITH_COURIER' ||
+        'WITH_OPERATOR' =>
           kWarningColor,
         _ => kMutedColor,
       };

@@ -27,7 +27,10 @@ class AccountingOverview {
 
   factory AccountingOverview.fromJson(dynamic json) {
     if (json is! Map<String, dynamic>) {
-      return const AccountingOverview(summary: OverviewSummary());
+      throw const FormatException('Invalid accounting overview');
+    }
+    if (json['summary'] is! Map<String, dynamic>) {
+      throw const FormatException('Missing accounting overview summary');
     }
     List<T> list<T>(String key, T Function(Map<String, dynamic>) item) =>
         (json[key] as List<dynamic>? ?? const [])
@@ -40,7 +43,8 @@ class AccountingOverview {
       districts: list('districts', NamedCount.fromJson),
       branches: list('branches', NamedCount.fromJson),
       mostOrderedProducts: list('mostOrderedProducts', ProductDemand.fromJson),
-      leastOrderedProducts: list('leastOrderedProducts', ProductDemand.fromJson),
+      leastOrderedProducts:
+          list('leastOrderedProducts', ProductDemand.fromJson),
       cancellationReasons: list('cancellationReasons', NamedCount.fromJson),
     );
   }

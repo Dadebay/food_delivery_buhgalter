@@ -14,8 +14,9 @@ extension AppLanguageInfo on AppLanguage {
   /// What the language calls itself.
   String get title => this == AppLanguage.turkmen ? 'Türkmençe' : 'Русский';
 
-  String get flagAsset =>
-      this == AppLanguage.turkmen ? 'assets/image/tm.png' : 'assets/image/ru.png';
+  String get flagAsset => this == AppLanguage.turkmen
+      ? 'assets/image/tm.png'
+      : 'assets/image/ru.png';
 
   String get short => this == AppLanguage.turkmen ? 'TM' : 'RU';
 }

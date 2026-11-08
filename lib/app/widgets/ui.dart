@@ -486,7 +486,8 @@ class NamedCountRow extends StatelessWidget {
                   value: share!.clamp(0, 1),
                   minHeight: 5,
                   backgroundColor: kBorderColor,
-                  valueColor: const AlwaysStoppedAnimation<Color>(kPrimaryColor),
+                  valueColor:
+                      const AlwaysStoppedAnimation<Color>(kPrimaryColor),
                 ),
               ),
             ],

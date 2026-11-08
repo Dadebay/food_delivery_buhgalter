@@ -33,9 +33,8 @@ class _ExpandableListState extends State<ExpandableList> {
   @override
   Widget build(BuildContext context) {
     final hasMore = widget.itemCount > widget.previewCount;
-    final shown = _expanded || !hasMore
-        ? widget.itemCount
-        : widget.previewCount;
+    final shown =
+        _expanded || !hasMore ? widget.itemCount : widget.previewCount;
     return CardBox(
       child: Column(
         children: [

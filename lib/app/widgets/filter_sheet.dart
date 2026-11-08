@@ -135,8 +135,7 @@ class _Option extends StatelessWidget {
                     child: Text(
                       label,
                       style: TextStyle(
-                        fontFamily:
-                            selected ? gilroySemiBold : gilroyRegular,
+                        fontFamily: selected ? gilroySemiBold : gilroyRegular,
                         fontSize: 14.5,
                         color: selected ? kPrimaryColor : kBlackColor,
                       ),

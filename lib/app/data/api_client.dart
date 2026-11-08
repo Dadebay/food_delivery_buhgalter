@@ -13,7 +13,17 @@ import '../constants/constants.dart';
 /// different with each: a bad parameter is our bug, an expired session sends
 /// the user back to the login, a missing right is permanent for this account,
 /// and a missing order is a dead link rather than a failure.
-enum ApiFailure { badRequest, unauthorized, forbidden, notFound, conflict, network, server }
+enum ApiFailure {
+  badRequest,
+  unauthorized,
+  forbidden,
+  notFound,
+  conflict,
+  network,
+  upgradeRequired,
+  rateLimited,
+  server,
+}
 
 class ApiException implements Exception {
   ApiException(this.failure, {this.statusCode, this.serverMessage});
@@ -27,7 +37,8 @@ class ApiException implements Exception {
   final String? serverMessage;
 
   @override
-  String toString() => serverMessage ?? 'API error ${statusCode ?? ''} ($failure)';
+  String toString() =>
+      serverMessage ?? 'API error ${statusCode ?? ''} ($failure)';
 }
 
 /// Bearer-authenticated JSON client for the accounting endpoints.
@@ -82,9 +93,11 @@ class ApiClient {
   /// expired mid-session does not throw the accountant back to the login for
   /// no reason.
   Future<dynamic> get(String path, {Map<String, dynamic>? query}) async {
-    var response = await _send(() => _client.get(_uri(path, query), headers: _headers()));
+    var response =
+        await _send(() => _client.get(_uri(path, query), headers: _headers()));
     if (response.statusCode == 401 && await _refreshSession()) {
-      response = await _send(() => _client.get(_uri(path, query), headers: _headers()));
+      response = await _send(
+          () => _client.get(_uri(path, query), headers: _headers()));
     }
     return _decode(response);
   }
@@ -130,32 +143,31 @@ class ApiClient {
     }
   }
 
-  /// Refreshes once. A failure clears the session rather than looping: the
-  /// caller's 401 then surfaces and the shell sends the user to the login.
+  /// Refreshes once. Only a rejected refresh credential clears the session;
+  /// temporary transport, rate-limit, and server errors must preserve it.
   Future<bool> _refreshSession() async {
     final token = refreshToken;
     if (token == null || token.isEmpty) return false;
-    try {
-      final response = await _client
-          .post(
-            _uri('auth/refresh'),
-            headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
-            body: jsonEncode({'refreshToken': token}),
-          )
-          .timeout(timeout);
-      if (response.statusCode < 200 || response.statusCode >= 300) {
-        await clearSession();
-        return false;
-      }
-      final data = jsonDecode(utf8.decode(response.bodyBytes));
-      if (data is! Map) return false;
-      final access = data['accessToken'] as String?;
-      if (access == null || access.isEmpty) return false;
-      await saveSession(access: access, refresh: data['refreshToken'] as String?);
-      return true;
-    } catch (_) {
+    final response = await _send(() => _client.post(
+          _uri('auth/refresh'),
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: jsonEncode({'refreshToken': token}),
+        ));
+    if (response.statusCode == 400 ||
+        response.statusCode == 401 ||
+        response.statusCode == 403) {
+      await clearSession();
       return false;
     }
+    final data = _decode(response);
+    if (data is! Map<String, dynamic>) return false;
+    final access = data['accessToken'] as String?;
+    if (access == null || access.isEmpty) return false;
+    await saveSession(access: access, refresh: data['refreshToken'] as String?);
+    return true;
   }
 
   dynamic _decode(http.Response response) {
@@ -176,7 +188,10 @@ class ApiClient {
         401 => ApiFailure.unauthorized,
         403 => ApiFailure.forbidden,
         404 => ApiFailure.notFound,
+        408 => ApiFailure.network,
         409 => ApiFailure.conflict,
+        426 => ApiFailure.upgradeRequired,
+        429 => ApiFailure.rateLimited,
         _ => ApiFailure.server,
       },
       statusCode: code,

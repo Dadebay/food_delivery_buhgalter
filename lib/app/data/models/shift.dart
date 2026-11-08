@@ -50,24 +50,30 @@ class CashDay {
   final CashHandoff? handoff;
   final List<CashHandoff> historicalHandoffs;
 
-  factory CashDay.fromJson(Map<String, dynamic> json) => CashDay(
-        shiftKey: (json['shiftKey'] ?? '').toString(),
-        shiftName: json['shiftName'] as String?,
-        periodStart: DateTime.tryParse(json['periodStart'] as String? ?? ''),
-        periodEnd: DateTime.tryParse(json['periodEnd'] as String? ?? ''),
-        isComplete: json['isComplete'] as bool? ?? false,
-        expectedAmount: asDouble(json['expectedAmount']),
-        availableAmount: asDouble(json['availableAmount']),
-        settlementCount: asInt(json['settlementCount']),
-        canSubmit: json['canSubmit'] as bool? ?? false,
-        state: json['state'] as String?,
-        handoff: CashHandoff.fromJson(json['handoff']),
-        historicalHandoffs: (json['historicalHandoffs'] as List<dynamic>? ??
-                const [])
-            .map(CashHandoff.fromJson)
-            .whereType<CashHandoff>()
-            .toList(),
-      );
+  factory CashDay.fromJson(Map<String, dynamic> json) {
+    final shiftKey = json['shiftKey'];
+    if (shiftKey is! String || shiftKey.isEmpty) {
+      throw const FormatException('Missing cash day key');
+    }
+    return CashDay(
+      shiftKey: shiftKey,
+      shiftName: json['shiftName'] as String?,
+      periodStart: DateTime.tryParse(json['periodStart'] as String? ?? ''),
+      periodEnd: DateTime.tryParse(json['periodEnd'] as String? ?? ''),
+      isComplete: json['isComplete'] as bool? ?? false,
+      expectedAmount: asDouble(json['expectedAmount']),
+      availableAmount: asDouble(json['availableAmount']),
+      settlementCount: asInt(json['settlementCount']),
+      canSubmit: json['canSubmit'] as bool? ?? false,
+      state: json['state'] as String?,
+      handoff: CashHandoff.fromJson(json['handoff']),
+      historicalHandoffs:
+          (json['historicalHandoffs'] as List<dynamic>? ?? const [])
+              .map(CashHandoff.fromJson)
+              .whereType<CashHandoff>()
+              .toList(),
+    );
+  }
 
   /// The calendar date half of the key, `2026-10-04`.
   String get dayKey =>

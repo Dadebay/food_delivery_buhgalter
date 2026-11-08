@@ -115,8 +115,8 @@ Future<void> confirmHandoff(
                     ),
                     InfoRow(
                       label: S.submittedAt,
-                      value:
-                          Ashgabat.dateTimeLabel(handoff.submittedAt) ?? kUnknown,
+                      value: Ashgabat.dateTimeLabel(handoff.submittedAt) ??
+                          kUnknown,
                     ),
                     if ((handoff.note ?? '').trim().isNotEmpty)
                       InfoRow(
@@ -343,8 +343,7 @@ Future<void> createHandoff(
                       : () async {
                           final (amount, valid) = parseDeclared();
                           if (!valid) {
-                            setSheetState(
-                                () => error = S.declaredAmountError);
+                            setSheetState(() => error = S.declaredAmountError);
                             return;
                           }
                           setSheetState(() {
