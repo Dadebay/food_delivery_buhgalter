@@ -16,8 +16,7 @@ import 'models/shift.dart';
 enum OrderBasis { created, cashReturned }
 
 extension OrderBasisValue on OrderBasis {
-  String get value =>
-      this == OrderBasis.created ? 'created' : 'cashReturned';
+  String get value => this == OrderBasis.created ? 'created' : 'cashReturned';
 }
 
 /// A period to ask about: either a calendar range or one shift.
@@ -67,12 +66,15 @@ class AccountingService {
       'accounting/days',
       query: {'fromDate': fromDate, 'toDate': toDate},
     );
-    final raw = data is Map<String, dynamic> ? data['items'] ?? data['days'] : data;
-    if (raw is! List) return const [];
-    return raw
-        .whereType<Map<String, dynamic>>()
-        .map(CashDay.fromJson)
-        .toList();
+    final raw =
+        data is Map<String, dynamic> ? data['items'] ?? data['days'] : data;
+    if (raw is! List) {
+      throw const FormatException('Invalid accounting days response');
+    }
+    if (raw.any((value) => value is! Map<String, dynamic>)) {
+      throw const FormatException('Invalid accounting day');
+    }
+    return raw.cast<Map<String, dynamic>>().map(CashDay.fromJson).toList();
   }
 
   /// Money returned in a calendar range. Calendar dates only — the figures of
@@ -101,8 +103,11 @@ class AccountingService {
     final totals = {for (var m = 1; m <= 12; m++) m: 0.0};
     for (final day in data.daily) {
       final parsed = DateTime.tryParse(day.date);
-      if (parsed == null || parsed.year != year) continue;
-      totals[parsed.month] = totals[parsed.month]! + (day.amount ?? 0);
+      if (parsed == null || day.amount == null) {
+        throw const FormatException('Invalid daily accounting amount');
+      }
+      if (parsed.year != year) continue;
+      totals[parsed.month] = totals[parsed.month]! + day.amount!;
     }
     return totals;
   }

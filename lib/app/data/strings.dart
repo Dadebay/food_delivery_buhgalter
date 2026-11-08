@@ -17,7 +17,7 @@ class S {
   static String pick(String ru, String tm) => _t(ru, tm);
 
   // ── Common ────────────────────────────────────────────────────────────
-  static String get appName => _t('Бухгалтерия', 'Buhgalteriýa');
+  static String get appName => 'A7-TAGAM Accountant';
   static String get unknown => _t('неизвестно', 'näbelli');
   static String get minutesShort => _t('мин', 'min');
   static String get hoursShort => _t('ч', 'sag');
@@ -44,11 +44,13 @@ class S {
   static String get errBadRequest => _t('Неверный запрос', 'Nädogry sorag');
   static String get errSession => _t('Сессия истекла', 'Sessiýa gutardy');
   static String get errNotFound => _t('Запись не найдена', 'Ýazgy tapylmady');
-  static String get errConflict =>
-      _t('Данные изменились', 'Maglumat üýtgedi');
+  static String get errConflict => _t('Данные изменились', 'Maglumat üýtgedi');
   static String get errNetwork => _t('Нет соединения', 'Baglanyşyk ýok');
-  static String get errServer =>
-      _t('Ошибка сервера', 'Serwer ýalňyşlygy');
+  static String get errUpgradeRequired =>
+      _t('Требуется обновление', 'Täzeleme gerek');
+  static String get errRateLimited =>
+      _t('Слишком много запросов', 'Soraglar çäklendirildi');
+  static String get errServer => _t('Ошибка сервера', 'Serwer ýalňyşlygy');
 
   static String get msgWrongRole => _t(
         'Журнал открыт бухгалтеру и владельцу. Выданная страница сама по себе '
@@ -81,6 +83,14 @@ class S {
   static String get msgNetwork => _t(
         'Проверьте связь и повторите запрос.',
         'Baglanyşygy barlaň we soragy gaýtalaň.',
+      );
+  static String get msgUpgradeRequired => _t(
+        'Обновите приложение, чтобы продолжить.',
+        'Dowam etmek üçin programmany täzeläň.',
+      );
+  static String get msgRateLimited => _t(
+        'Подождите немного и повторите запрос.',
+        'Biraz garaşyň we soragy gaýtalaň.',
       );
   static String get msgServer => _t(
         'Сервер не смог ответить. Повторите позже.',
@@ -180,7 +190,8 @@ class S {
         'Незавершённые заказы на входе',
         'Girişdäki tamamlanmadyk sargytlar',
       );
-  static String get carryOut => _t('Передано на следующий день', 'Indiki güne geçirilen');
+  static String get carryOut =>
+      _t('Передано на следующий день', 'Indiki güne geçirilen');
   static String get carryOutSub => _t(
         'Незавершённые заказы на выходе',
         'Çykyşdaky tamamlanmadyk sargytlar',
@@ -188,8 +199,7 @@ class S {
 
   // ── Orders ────────────────────────────────────────────────────────────
   static String get basisCreated => _t('По созданию', 'Döredilişi boýunça');
-  static String get basisCash =>
-      _t('По возврату денег', 'Pul gaýdyşy boýunça');
+  static String get basisCash => _t('По возврату денег', 'Pul gaýdyşy boýunça');
   static String get noOrders => _t('Заказов нет', 'Sargyt ýok');
   static String get noOrdersCreated => _t(
         'В выбранном периоде заказы не создавались.',
@@ -253,8 +263,7 @@ class S {
   static String get participants => _t('Кто участвовал', 'Kim gatnaşdy');
   static String get courier => _t('Курьер', 'Kurýer');
   static String get cook => _t('Повар', 'Aşpez');
-  static String get courierUnknownShort =>
-      _t('неизвестен', 'näbelli');
+  static String get courierUnknownShort => _t('неизвестен', 'näbelli');
   static String get courierUnknownNote => _t(
         'Фактический курьер неизвестен: назначение сделано технически при '
             'историческом закрытии заказа.',
@@ -268,8 +277,7 @@ class S {
             'eltendigini subut etmeýär.',
       );
   static String get stages => _t('Этапы', 'Tapgyrlar');
-  static String get assignedAt =>
-      _t('Назначен курьеру', 'Kurýere berildi');
+  static String get assignedAt => _t('Назначен курьеру', 'Kurýere berildi');
   static String get packedAt =>
       _t('Сборка подтверждена', 'Ýygnalmagy tassyklandy');
   static String get deliveredAt => _t('Доставлен', 'Eltildi');
@@ -344,12 +352,12 @@ class S {
   static String get submittedAt => _t('Передан', 'Tabşyrylan');
   static String get confirmedAt => _t('Подтверждён', 'Tassyklanan');
   static String get comment => _t('Комментарий', 'Bellik');
-  static String get onConfirmation =>
-      _t('При подтверждении', 'Tassyklananda');
-  static String get recordsInPacket => _t('Записей в пакете', 'Bukjadaky ýazgy');
-  static String get confirmAmount =>
-      _t('Я принял деньги', 'Tölegi aldym');
-  static String get createPacket => _t('Сдать деньги за день', 'Gün üçin pul tabşyr');
+  static String get onConfirmation => _t('При подтверждении', 'Tassyklananda');
+  static String get recordsInPacket =>
+      _t('Записей в пакете', 'Bukjadaky ýazgy');
+  static String get confirmAmount => _t('Я принял деньги', 'Tölegi aldym');
+  static String get createPacket =>
+      _t('Сдать деньги за день', 'Gün üçin pul tabşyr');
   static String get confirmPacketTitle =>
       _t('Подтвердить получение денег', 'Pulyň alnandygyny tassykla');
   static String get confirmReceipt =>
@@ -361,8 +369,7 @@ class S {
       _t('Комментарий бухгалтера', 'Buhgalteriň bellik');
   static String get shortfall => _t('Недостача', 'Kemçilik');
   static String get surplus => _t('Излишек', 'Artykmaçlyk');
-  static String get availableToHandOver =>
-      _t('Не передано', 'Tabşyrylmadyk');
+  static String get availableToHandOver => _t('Не передано', 'Tabşyrylmadyk');
   static String get recordsOfDay => _t('Записей', 'Ýazgy');
   static String get previouslyHandedOver =>
       _t('Ранее передано', 'Öň tabşyrylan');
@@ -386,7 +393,8 @@ class S {
       );
   static String get createPacketTitle =>
       _t('Сдать деньги бухгалтеру', 'Pulu buhgaltere tabşyr');
-  static String get expectedAmount => _t('Ожидаемая сумма', 'Garaşylýan möçber');
+  static String get expectedAmount =>
+      _t('Ожидаемая сумма', 'Garaşylýan möçber');
   static String get records => _t('Записей', 'Ýazgy');
   static String get noteOptional =>
       _t('Комментарий (необязательно)', 'Bellik (hökman däl)');
@@ -478,8 +486,7 @@ class S {
   static String get cancelledBar => _t('Отменено', 'Ýatyrylan');
   static String get districts => _t('Районы', 'Etraplar');
   static String get kitchens => _t('Кухни', 'Aşhanalar');
-  static String get cancelReasons =>
-      _t('Причины отмен', 'Ýatyrylyş sebäpleri');
+  static String get cancelReasons => _t('Причины отмен', 'Ýatyrylyş sebäpleri');
   static String get mostOrdered => _t('Часто заказывают', 'Köp sargyt edilýär');
   static String get leastOrdered => _t('Редко заказывают', 'Az sargyt edilýär');
   static String get demandNote => _t(

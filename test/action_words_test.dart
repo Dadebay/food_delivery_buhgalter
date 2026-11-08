@@ -1,20 +1,17 @@
+import 'dart:io';
+
 import 'package:accounting_app/app/data/action_words.dart';
 import 'package:accounting_app/app/data/labels.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:get_storage/get_storage.dart';
+
+import 'support/test_storage.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  setUpAll(() async {
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-        .setMockMethodCallHandler(
-      const MethodChannel('plugins.flutter.io/path_provider'),
-      (call) async => '.',
-    );
-    await GetStorage.init();
-  });
+  late Directory storageDirectory;
+  setUpAll(() async => storageDirectory = await initTestStorage());
+  tearDownAll(() => disposeTestStorage(storageDirectory));
 
   test('event codes are translated half by half and agree in gender', () {
     expect(ActionWords.describe('address.activated'), 'Адрес активирован');
@@ -23,8 +20,8 @@ void main() {
     expect(ActionWords.describe('settings.updated'), 'Настройки обновлены');
     expect(ActionWords.describe('promo-code.rejected'), 'Промокод отклонён');
     expect(ActionWords.describe('banner.rejected'), 'Баннер отклонён');
-    expect(ActionWords.describe('product.price_changed'),
-        'Блюдо: цена изменена');
+    expect(
+        ActionWords.describe('product.price_changed'), 'Блюдо: цена изменена');
   });
 
   test('unknown halves are not guessed', () {

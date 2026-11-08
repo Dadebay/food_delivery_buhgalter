@@ -250,9 +250,10 @@ class _LoginPageState extends State<LoginPage> {
                   shape: const RoundedRectangleBorder(
                       borderRadius: borderRadius15),
                 ),
-                onPressed: _busy || (_codeRequested ? !_codeReady : !_phoneReady)
-                    ? null
-                    : (_codeRequested ? _verify : _requestCode),
+                onPressed:
+                    _busy || (_codeRequested ? !_codeReady : !_phoneReady)
+                        ? null
+                        : (_codeRequested ? _verify : _requestCode),
                 child: _busy
                     ? const SizedBox(
                         width: 20,
@@ -331,7 +332,7 @@ class _LoginPageState extends State<LoginPage> {
                   padding: EdgeInsets.fromLTRB(14, 0, 8, 0),
                   child: Text(
                     '+993',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontFamily: gilroyBold,
                       fontSize: 17,
                       color: kBlackColor,

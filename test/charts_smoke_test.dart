@@ -1,23 +1,20 @@
+import 'dart:io';
+
 import 'package:accounting_app/app/data/ashgabat_time.dart';
 import 'package:accounting_app/app/data/models/report.dart';
 import 'package:accounting_app/app/widgets/daily_charts.dart';
 import 'package:accounting_app/app/widgets/ranked_card.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:get_storage/get_storage.dart';
+
+import 'support/test_storage.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  setUpAll(() async {
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-        .setMockMethodCallHandler(
-      const MethodChannel('plugins.flutter.io/path_provider'),
-      (call) async => '.',
-    );
-    await GetStorage.init();
-  });
+  late Directory storageDirectory;
+  setUpAll(() async => storageDirectory = await initTestStorage());
+  tearDownAll(() => disposeTestStorage(storageDirectory));
 
   Future<void> pumpAt(WidgetTester tester, Widget child) async {
     tester.view.physicalSize = const Size(360 * 3, 800 * 3);
@@ -56,7 +53,8 @@ void main() {
           icon: const [],
           rows: [
             for (var i = 0; i < 9; i++)
-              RankRow(name: 'Район номер $i', count: 40 - i * 3, amount: 500.0 * i),
+              RankRow(
+                  name: 'Район номер $i', count: 40 - i * 3, amount: 500.0 * i),
           ],
         ),
       ]),

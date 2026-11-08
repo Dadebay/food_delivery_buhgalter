@@ -19,7 +19,10 @@ class AccountingReport {
 
   factory AccountingReport.fromJson(dynamic json) {
     if (json is! Map<String, dynamic>) {
-      return const AccountingReport(summary: ReportSummary());
+      throw const FormatException('Invalid accounting report');
+    }
+    if (json['summary'] is! Map<String, dynamic>) {
+      throw const FormatException('Missing accounting report summary');
     }
     return AccountingReport(
       summary: ReportSummary.fromJson(json['summary']),

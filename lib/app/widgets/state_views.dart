@@ -85,7 +85,8 @@ class ErrorView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final failure = error is ApiException ? (error as ApiException).failure : null;
+    final failure =
+        error is ApiException ? (error as ApiException).failure : null;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 24),
       child: Column(
@@ -148,6 +149,8 @@ String errorTitle(Object error) {
     ApiFailure.notFound => S.errNotFound,
     ApiFailure.conflict => S.errConflict,
     ApiFailure.network => S.errNetwork,
+    ApiFailure.upgradeRequired => S.errUpgradeRequired,
+    ApiFailure.rateLimited => S.errRateLimited,
     ApiFailure.server => S.errServer,
   };
 }
@@ -164,6 +167,8 @@ String errorMessage(Object error) {
     ApiFailure.notFound => S.msgNotFound,
     ApiFailure.conflict => S.msgConflict,
     ApiFailure.network => S.msgNetwork,
+    ApiFailure.upgradeRequired => S.msgUpgradeRequired,
+    ApiFailure.rateLimited => S.msgRateLimited,
     ApiFailure.server => S.msgServer,
   };
 }
