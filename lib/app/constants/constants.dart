@@ -30,7 +30,7 @@ const String gilroyRegular = 'GilroyRegular';
 const String tmIcon = 'assets/image/tm.png';
 const String ruIcon = 'assets/image/ru.png';
 
-const String appName = 'Бухгалтерия';
+const String appName = 'A7-TAGAM Accountant';
 
 /// The API's paging contract: `page` starts at 1, `limit` defaults to 25 and
 /// is capped at 100. The first page is never the whole report.
