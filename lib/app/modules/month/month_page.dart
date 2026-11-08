@@ -55,8 +55,12 @@ class MonthPage extends StatelessWidget {
                 .month(fromDate: period.fromDate, toDate: period.toDate),
             builder: (context, bundle, reload) => TabBarView(
               children: [
-                _Tab(reload: reload, children: _money(context, bundle, period.month)),
-                _Tab(reload: reload, children: _orders(context, bundle, period.month)),
+                _Tab(
+                    reload: reload,
+                    children: _money(context, bundle, period.month)),
+                _Tab(
+                    reload: reload,
+                    children: _orders(context, bundle, period.month)),
                 _Tab(reload: reload, children: _breakdown(bundle)),
               ],
             ),
@@ -67,7 +71,8 @@ class MonthPage extends StatelessWidget {
   }
 
   /// Everything that came in and where it stands.
-  List<Widget> _money(BuildContext context, MonthBundle bundle, DateTime month) {
+  List<Widget> _money(
+      BuildContext context, MonthBundle bundle, DateTime month) {
     final report = bundle.report.summary;
     return [
       _PairCard(
@@ -93,7 +98,8 @@ class MonthPage extends StatelessWidget {
   }
 
   /// What was ordered, and what was cancelled out of it.
-  List<Widget> _orders(BuildContext context, MonthBundle bundle, DateTime month) {
+  List<Widget> _orders(
+      BuildContext context, MonthBundle bundle, DateTime month) {
     final overview = bundle.overview.summary;
     return [
       _PairCard(
@@ -126,9 +132,8 @@ class MonthPage extends StatelessWidget {
           for (final row in rows)
             RankRow(
               // An unknown district is shown as such, never guessed.
-              name: reasons
-                  ? Labels.cancelReason(row.name)
-                  : Fmt.text(row.name),
+              name:
+                  reasons ? Labels.cancelReason(row.name) : Fmt.text(row.name),
               count: row.count ?? 0,
               amount: row.foodAmount,
             ),
@@ -191,9 +196,8 @@ class MonthPage extends StatelessWidget {
           period: Period.range(date, date),
           basis: basis,
           title: Ashgabat.dayLabel(day),
-          subtitle: basis == OrderBasis.created
-              ? S.ordersByCreation
-              : S.moneyOfShift,
+          subtitle:
+              basis == OrderBasis.created ? S.ordersByCreation : S.moneyOfShift,
         ),
       ),
     );

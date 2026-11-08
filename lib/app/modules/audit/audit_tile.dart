@@ -335,16 +335,19 @@ class _AuditDetails extends StatelessWidget {
             child: FilledButton.icon(
               style: FilledButton.styleFrom(
                 backgroundColor: kPrimaryColor,
-                shape: const RoundedRectangleBorder(borderRadius: borderRadius15),
+                shape:
+                    const RoundedRectangleBorder(borderRadius: borderRadius15),
               ),
               onPressed: () {
                 Navigator.of(context).pop();
                 onOpenOrder!(orderId);
               },
-              icon: const AppIcon(AppIcons.orders, size: 18, color: Colors.white),
+              icon:
+                  const AppIcon(AppIcons.orders, size: 18, color: Colors.white),
               label: Text(
                 S.openOrder,
-                style: const TextStyle(fontFamily: gilroySemiBold, color: Colors.white),
+                style: const TextStyle(
+                    fontFamily: gilroySemiBold, color: Colors.white),
               ),
             ),
           ),
@@ -652,7 +655,8 @@ class _TechnicalDetails extends StatelessWidget {
                   if (entry.metadata != null) ...[
                     const SizedBox(height: 10),
                     SelectableText(
-                      const JsonEncoder.withIndent('  ').convert(entry.metadata),
+                      const JsonEncoder.withIndent('  ')
+                          .convert(entry.metadata),
                       style: const TextStyle(
                         fontFamily: 'monospace',
                         fontSize: 11.5,

@@ -422,7 +422,8 @@ class _ReceiptTab extends StatelessWidget {
                 const SizedBox(height: 6),
                 for (final gift in order.gifts)
                   ReceiptRow(
-                    label: '${Fmt.text(gift.name)} × ${Fmt.count(gift.quantity)}',
+                    label:
+                        '${Fmt.text(gift.name)} × ${Fmt.count(gift.quantity)}',
                     value: gift.totalPoints == null
                         ? kDash
                         : S.points(Fmt.count(gift.totalPoints)),
@@ -437,8 +438,10 @@ class _ReceiptTab extends StatelessWidget {
                 value: Fmt.money(order.discount),
                 color: (order.discount ?? 0) > 0 ? kPositiveColor : null,
               ),
-              ReceiptRow(label: S.foodAmount, value: Fmt.money(order.foodAmount)),
-              ReceiptRow(label: S.delivery, value: Fmt.money(order.deliveryFee)),
+              ReceiptRow(
+                  label: S.foodAmount, value: Fmt.money(order.foodAmount)),
+              ReceiptRow(
+                  label: S.delivery, value: Fmt.money(order.deliveryFee)),
               if (order.loyaltyPointsEarned != null ||
                   order.loyaltyPointsSpent != null)
                 ReceiptRow(
@@ -499,7 +502,6 @@ class _ReceiptTab extends StatelessWidget {
             color: kMutedColor,
           ),
         ),
-
         SectionTitle(S.money, icon: AppIcons.money),
         if (settlement == null) ...[
           CardBox(
@@ -567,8 +569,8 @@ class _ReceiptTab extends StatelessWidget {
                 ),
                 InfoRow(
                   label: S.reconciledAt,
-                  value:
-                      Ashgabat.dateTimeLabel(settlement.reconciledAt) ?? kUnknown,
+                  value: Ashgabat.dateTimeLabel(settlement.reconciledAt) ??
+                      kUnknown,
                 ),
                 InfoRow(
                   label: S.operator,
@@ -690,8 +692,7 @@ class _ReceiptLine extends StatelessWidget {
               ),
             ),
             if (line.preparationMinutes != null) ...[
-              const AppIcon(AppIcons.preparation,
-                  size: 12, color: kMutedColor),
+              const AppIcon(AppIcons.preparation, size: 12, color: kMutedColor),
               const SizedBox(width: 4),
               Text(
                 // 520 is a legal value and is printed in full.
@@ -738,7 +739,6 @@ class _HistoryTab extends StatelessWidget {
             ),
           ),
         ),
-        itemBuilder: (context, entry, index) =>
-            AuditTimelineTile(entry: entry),
+        itemBuilder: (context, entry, index) => AuditTimelineTile(entry: entry),
       );
 }

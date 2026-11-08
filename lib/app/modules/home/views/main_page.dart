@@ -63,8 +63,7 @@ class MainPage extends StatelessWidget {
       ),
       body: SafeArea(
         child: AnimatedBuilder(
-          animation:
-              Listenable.merge([period, language, App.instance.refresh]),
+          animation: Listenable.merge([period, language, App.instance.refresh]),
           builder: (context, _) {
             // Rebuilt with the month so every door carries the current range.
             final range = Period.range(period.fromDate, period.toDate);
@@ -252,8 +251,8 @@ class MainPage extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child:
-                Text(S.cancel, style: const TextStyle(fontFamily: gilroyMedium)),
+            child: Text(S.cancel,
+                style: const TextStyle(fontFamily: gilroyMedium)),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
@@ -610,7 +609,8 @@ class _TodayCard extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  const AppIcon(AppIcons.handoff, size: 18, color: Colors.white),
+                  const AppIcon(AppIcons.handoff,
+                      size: 18, color: Colors.white),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(

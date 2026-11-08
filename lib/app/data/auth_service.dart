@@ -58,8 +58,8 @@ class AuthService {
   /// has no business in this app. The two are worth telling apart: a wrong
   /// code is a typo, a wrong role is a conversation with the owner.
   Future<StaffRole> verifyCode(String phone, String code) async {
-    final payload =
-        await _api.post('auth/otp/verify', body: {'phone': phone, 'code': code});
+    final payload = await _api
+        .post('auth/otp/verify', body: {'phone': phone, 'code': code});
     if (payload is! Map<String, dynamic>) {
       throw ApiException(ApiFailure.server);
     }

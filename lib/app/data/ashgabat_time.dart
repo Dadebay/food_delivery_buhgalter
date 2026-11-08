@@ -18,19 +18,49 @@ class Ashgabat {
   static const Duration offset = Duration(hours: 5);
 
   static const List<String> _ruMonths = [
-    'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
-    'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь',
+    'Январь',
+    'Февраль',
+    'Март',
+    'Апрель',
+    'Май',
+    'Июнь',
+    'Июль',
+    'Август',
+    'Сентябрь',
+    'Октябрь',
+    'Ноябрь',
+    'Декабрь',
   ];
 
   /// Russian needs the genitive for "27 сентября 2026".
   static const List<String> _ruMonthsOfDay = [
-    'января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
-    'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря',
+    'января',
+    'февраля',
+    'марта',
+    'апреля',
+    'мая',
+    'июня',
+    'июля',
+    'августа',
+    'сентября',
+    'октября',
+    'ноября',
+    'декабря',
   ];
 
   static const List<String> _tmMonths = [
-    'Ýanwar', 'Fewral', 'Mart', 'Aprel', 'Maý', 'Iýun',
-    'Iýul', 'Awgust', 'Sentýabr', 'Oktýabr', 'Noýabr', 'Dekabr',
+    'Ýanwar',
+    'Fewral',
+    'Mart',
+    'Aprel',
+    'Maý',
+    'Iýun',
+    'Iýul',
+    'Awgust',
+    'Sentýabr',
+    'Oktýabr',
+    'Noýabr',
+    'Dekabr',
   ];
 
   static bool get _turkmen => App.instance.language.isTurkmen;
@@ -51,7 +81,8 @@ class Ashgabat {
     return DateTime.tryParse(value);
   }
 
-  static DateTime firstOfMonth(DateTime day) => DateTime(day.year, day.month, 1);
+  static DateTime firstOfMonth(DateTime day) =>
+      DateTime(day.year, day.month, 1);
 
   /// The last day of [day]'s month — 28, 29, 30 or 31, worked out by stepping
   /// back from the first of the next month rather than by a table.
@@ -63,7 +94,9 @@ class Ashgabat {
   /// days with no takings; those are zeros, and a failed request is not.
   static List<DateTime> daysOfMonth(DateTime month) {
     final last = lastOfMonth(month).day;
-    return [for (var d = 1; d <= last; d++) DateTime(month.year, month.month, d)];
+    return [
+      for (var d = 1; d <= last; d++) DateTime(month.year, month.month, d)
+    ];
   }
 
   /// «Сентябрь» / «Sentýabr».
@@ -79,7 +112,8 @@ class Ashgabat {
   /// «27 сентября 2026» / «27 sentýabr 2026».
   static String dayLabel(DateTime day) {
     final index = (day.month - 1).clamp(0, 11);
-    final name = _turkmen ? _tmMonths[index].toLowerCase() : _ruMonthsOfDay[index];
+    final name =
+        _turkmen ? _tmMonths[index].toLowerCase() : _ruMonthsOfDay[index];
     return '${day.day} $name ${day.year}';
   }
 

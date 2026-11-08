@@ -39,8 +39,7 @@ class _AuditPageState extends State<AuditPage> {
   String? _action;
   String? _entityType;
 
-  String get _requestKey =>
-      '${widget.period.query}|$_action|$_entityType';
+  String get _requestKey => '${widget.period.query}|$_action|$_entityType';
 
   @override
   Widget build(BuildContext context) => AppScaffold(
@@ -135,4 +134,3 @@ class _AuditPageState extends State<AuditPage> {
         ),
       );
 }
-

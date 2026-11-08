@@ -42,7 +42,8 @@ class _DayDetailPageState extends State<DayDetailPage> {
   Future<void> _reload() async {
     final key = _day.dayKey;
     try {
-      final days = await App.instance.accounting.days(fromDate: key, toDate: key);
+      final days =
+          await App.instance.accounting.days(fromDate: key, toDate: key);
       for (final day in days) {
         if (day.shiftKey == _day.shiftKey && mounted) {
           setState(() => _day = day);
@@ -73,7 +74,8 @@ class _DayDetailPageState extends State<DayDetailPage> {
               const SizedBox(height: 12),
               PacketTile(packet: packet, onChanged: _reload, detailed: true),
             ],
-            if (_day.canCreatePacket && App.instance.auth.role.canCreateHandoff) ...[
+            if (_day.canCreatePacket &&
+                App.instance.auth.role.canCreateHandoff) ...[
               const SizedBox(height: 12),
               SizedBox(
                 width: double.infinity,
@@ -81,10 +83,13 @@ class _DayDetailPageState extends State<DayDetailPage> {
                 child: FilledButton.icon(
                   style: FilledButton.styleFrom(
                     backgroundColor: kPositiveColor,
-                    shape: const RoundedRectangleBorder(borderRadius: borderRadius15),
+                    shape: const RoundedRectangleBorder(
+                        borderRadius: borderRadius15),
                   ),
-                  onPressed: () => receiveDay(context, day: _day, onDone: _reload),
-                  icon: const AppIcon(AppIcons.confirmed, size: 22, color: Colors.white),
+                  onPressed: () =>
+                      receiveDay(context, day: _day, onDone: _reload),
+                  icon: const AppIcon(AppIcons.confirmed,
+                      size: 22, color: Colors.white),
                   label: Text(
                     S.confirmAmount,
                     style: const TextStyle(
@@ -102,9 +107,11 @@ class _DayDetailPageState extends State<DayDetailPage> {
                 child: OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: kBorderColor),
-                    shape: const RoundedRectangleBorder(borderRadius: borderRadius15),
+                    shape: const RoundedRectangleBorder(
+                        borderRadius: borderRadius15),
                   ),
-                  onPressed: () => createHandoff(context, day: _day, onDone: _reload),
+                  onPressed: () =>
+                      createHandoff(context, day: _day, onDone: _reload),
                   icon: const AppIcon(AppIcons.handoff, size: 20),
                   label: Text(
                     S.createPacket,
@@ -116,7 +123,9 @@ class _DayDetailPageState extends State<DayDetailPage> {
                   ),
                 ),
               ),
-            ] else if (_day.isComplete && _day.handoff == null && (_day.availableAmount ?? 0) > 0) ...[
+            ] else if (_day.isComplete &&
+                _day.handoff == null &&
+                (_day.availableAmount ?? 0) > 0) ...[
               // An accountant cannot create a packet — the server refuses it
               // — so there is nothing to accept yet. Say so instead of
               // leaving a button that can only fail.
